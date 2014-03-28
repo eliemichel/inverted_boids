@@ -3,10 +3,22 @@
 	des arguments.
 *)
 
+open Graphics
+
 let dump_file = ref ""
 
 let main arg =
-	()
+	Random.self_init ();
+	open_graph " 600x600";
+	set_window_title "Boids";
+	auto_synchronize false;
+	while not (key_pressed () && read_key () = 'q') do
+		clear_graph ();
+		synchronize ();
+		ignore (Unix.system "sleep 0.02");
+	done;
+	close_graph ();
+	exit(0)
 
 
 let () = Arg.parse
@@ -16,6 +28,8 @@ let () = Arg.parse
 	"Usage : display.\n\
 	Display a multi-agent boids-based simulation.\n\
 	The available options are :"
+	;
+	main ()
 
 
 
