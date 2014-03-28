@@ -4,7 +4,7 @@ Inversion de boids
 ==================
 
 
-**Attention :** Ce document est écrit dans une version étendue de Markdown permettant d'écrire des expressions mathématiques : [TeXdown](https://github.com/eliemichel/texdown). Vous pouvez en voir une version PDF [ici](www.exppad.com/public/cours/inverted_boids/README.pdf) mais elle a moins de chances d'être à jour que ce document.
+**Attention :** Ce document est écrit dans une version étendue de Markdown permettant d'écrire des expressions mathématiques : [TeXdown](https://github.com/eliemichel/texdown). Vous pouvez en voir une version PDF [ici](http://www.exppad.com/public/cours/inverted_boids/README.pdf) mais elle a moins de chances d'être à jour que ce document.
 
 
 
