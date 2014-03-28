@@ -5,7 +5,7 @@ FLAGS1=-libs graphics,unix
 
 BIN2=invert
 SOURCES2=engine.ml invert.ml
-FLAGS2=
+FLAGS2=-libs graphics,unix
 
 NO_COLOR=\033[0m
 OK_COLOR=\033[32;01m

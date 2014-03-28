@@ -4,8 +4,22 @@
 *)
 
 open Graphics
+open Engine
 
 let dump_file = ref ""
+
+
+let draw_boid boid =
+	let x,y = boid.pos in
+		set_color boid.color;
+		fill_circle (truncate x) (truncate y) 3
+
+
+let rules = [] (* TODO *)
+
+let n = 200
+
+let boids = Array.init n (fun i -> default_boid ())
 
 let main arg =
 	Random.self_init ();
@@ -14,6 +28,8 @@ let main arg =
 	auto_synchronize false;
 	while not (key_pressed () && read_key () = 'q') do
 		clear_graph ();
+		Array.iter draw_boid boids;
+		Engine.step rules boids;
 		synchronize ();
 		ignore (Unix.system "sleep 0.02");
 	done;

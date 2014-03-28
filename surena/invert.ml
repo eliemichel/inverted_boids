@@ -1,9 +1,11 @@
 (*
+	Invert tente à partir des données de sortie d'une simulation de retrouver
+	les paramètres qui l'ont conduit.
 *)
 
 
 let main filename =
-	()
+	() (* TODO *)
 
 
 let () = Arg.parse

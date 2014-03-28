@@ -8,7 +8,7 @@ type boid = {
 	pos   : float * float;
 	v     : float * float;
 	alive : bool; (* true = agent ; false = Décors *)
-	color : color
+	color : Graphics.color
 }
 
 let zero = (0.,0.)
@@ -26,14 +26,19 @@ let random_pos xmin xmax ymin ymax =
 	(xmin +. (Random.float (xmax -. xmin))),
 	(ymin +. (Random.float (ymax -. ymin)))
 
+let default_boid () = {
+	pos = random_pos 0. 600. 0. 600.;
+	v = random_pos (-10.) 10. (-10.) 10.;
+	alive = true;
+	color = Graphics.black
+}
 
-
-let step rules positions =
+let step rules boids =
 	(**
-		`step rules positions`
-		met à jour le vecteur de positions à partir des règles données.
+		`step rules boids`
+		met à jour le vecteur de boids à partir des règles données.
 	*)
-	()
+	() (* TODO *)
 
 
 
