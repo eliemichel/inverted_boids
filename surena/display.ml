@@ -14,10 +14,14 @@ let draw_boid boid =
 		set_color boid.color;
 		fill_circle (truncate x) (truncate y) 3
 
-
-let rules = [] (* TODO *)
-
 let n = 200
+
+let uniform n a = Array.init n (fun _ -> Array.make n a)
+let rules = [
+	Cohesion (uniform n 0.0001, uniform n 0.01, uniform n 100.)
+]
+(* TODO : Procédures pratiques de construction de règle *)
+
 
 let boids = Array.init n (fun i -> default_boid ())
 
