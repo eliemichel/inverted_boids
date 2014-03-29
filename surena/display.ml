@@ -29,7 +29,7 @@ let main arg =
 	while not (key_pressed () && read_key () = 'q') do
 		clear_graph ();
 		Array.iter draw_boid boids;
-		Engine.step rules boids;
+		Engine.step boids rules;
 		synchronize ();
 		ignore (Unix.system "sleep 0.02");
 	done;
