@@ -37,7 +37,7 @@ let default_boid () = {
 	pos = random_pos 0. 600. 0. 600.;
 	v = zero;(*random_pos (-10.) 10. (-10.) 10.;*)
 	alive = true;
-	color = Graphics.black
+	color = Graphics.red
 }
 
 let sigmoid alpha lambda x =

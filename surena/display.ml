@@ -17,8 +17,11 @@ let draw_boid boid =
 let n = 200
 
 let uniform n a = Array.init n (fun _ -> Array.make n a)
+	(** Array.make_matrix... *)
 let rules = [
-	Cohesion (uniform n 0.0001, uniform n 0.01, uniform n 100.)
+	Cohesion (uniform n 0.001, uniform n 0.1, uniform n 100.);
+	Cohesion (uniform n (-0.01), uniform n 0.3, uniform n 30.);
+	Alignment (uniform n 0.001, uniform n 0.01, uniform n 100.)
 ]
 (* TODO : Procédures pratiques de construction de règle *)
 
