@@ -11,10 +11,18 @@ type boid = {
 	color : Graphics.color
 }
 
-type rule_param = float array array * float array array * float array array
-type rule =
+type rule_param = (float array array * float array array * float array array)
+type _rule =
 	| Cohesion of rule_param
 	| Alignment of rule_param
+	| Inertia of float array
+type rule = float array * _rule
+
+let real_mod a b =
+	if a < 0. then (mod_float a b) +. b
+	else mod_float a b 
+
+let real_mod2 (a,b) (c,d) = real_mod a c, real_mod b d
 
 let zero = (0.,0.)
 
@@ -27,14 +35,32 @@ let (--) (a,b) (c,d) = ((a-.c),(b-.d))
 let ( // ) (a,b) n = ((a/.n),(b/.n))
 let ( ** ) (a,b) n = ((a*.n),(b*.n))
 
-let d a b = norm2 (a -- b)
+let capx = 600.
+let capy = 600.
+let capv = capx, capy
+
+let (---) (a,b) (c,d) =
+	let dx = a -. c in
+	let dy = b -. d in
+	let rx =
+		if dx < (-. capx /. 2.) || dx > capx /. 2. then capx -. dx else dx in
+	let ry =
+		if dy < (-. capy /. 2.) || dy > capy /. 2. then capy -. dy else dy in
+	rx,ry
+
+let d (a,b) (c,d) =
+	let absx = abs_float (a -. c) in
+	let absy = abs_float (b -. d) in
+	let dx = if absx < capx /. 2. then absx else capx -. absx in
+	let dy = if absy < capy /. 2. then absy else capy -. absy in
+	sqrt (dx *. dx +. dy *. dy)
 
 let random_pos xmin xmax ymin ymax =
 	(xmin +. (Random.float (xmax -. xmin))),
 	(ymin +. (Random.float (ymax -. ymin)))
 
 let default_boid () = {
-	pos = random_pos 0. 600. 0. 600.;
+	pos = random_pos 0. capx 0. capy;
 	v = zero;(*random_pos (-10.) 10. (-10.) 10.;*)
 	alive = true;
 	color = Graphics.red
@@ -47,7 +73,7 @@ let coef boids (m, alpha, lambda) i j =
 	(sigmoid
 		alpha.(i).(j)
 		lambda.(i).(j)
-		(norm (boids.(j).pos -- boids.(i).pos))
+		(d boids.(j).pos boids.(i).pos)
 	) *. m.(i).(j)
 
 let sum n f =
@@ -56,15 +82,30 @@ let sum n f =
 		| i -> let i' = i - 1 in f i' ++ aux i'
 	in aux n
 
-let step_rule_single boids rule i = match rule with
-	| Cohesion param ->
-		sum (Array.length boids) (fun j ->
-			(boids.(j).pos -- boids.(i).pos) ** (coef boids param i j)
-		)
-	| Alignment param ->
-		sum (Array.length boids) (fun j ->
-			boids.(j).v ** (coef boids param i j)
-		)
+let sum2 n f =
+	let rec aux = function
+		| 0 -> zero,0.
+		| i -> let i2 = i - 1 in
+			let a,b = aux i2 in
+			let a2,b2 = f i2 in
+			a2 ++ a, b2 +. b
+	in aux n
+
+let step_rule_single boids (beta,rule) i =
+	let f,s = match rule with
+		| Cohesion param ->
+			sum2 (Array.length boids) (fun j ->
+				let c = coef boids param i j in
+				  (boids.(j).pos --- boids.(i).pos) ** c, c
+				  	
+			)
+		| Alignment param ->
+			sum2 (Array.length boids) (fun j ->
+				let c = coef boids param i j in
+					boids.(j).v ** c, c
+			)
+		| Inertia param -> boids.(i).v ** param.(i), 1.
+	in f ** (beta.(i) /. s)
 
 let step_rule boids rule =
 	Array.init (Array.length boids) (step_rule_single boids rule)
@@ -76,7 +117,7 @@ let add_to_boids boids vec =
 	done
 
 let update_pos boids =
-	Array.iter (fun b -> b.pos <- b.pos ++ b.v) boids
+	Array.iter (fun b -> b.pos <- real_mod2 (b.pos ++ b.v) capv) boids
 
 let step boids rules =
 	(**
@@ -84,6 +125,7 @@ let step boids rules =
 		met à jour le vecteur de boids à partir des règles données.
 	*)
 	let applied_rules = List.map (step_rule boids) rules in
+		Array.iter (fun boid -> boid.v <- zero) boids;
 		List.iter (add_to_boids boids) applied_rules;
 		update_pos boids
 

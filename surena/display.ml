@@ -8,20 +8,20 @@ open Engine
 
 let dump_file = ref ""
 
-
 let draw_boid boid =
 	let x,y = boid.pos in
 		set_color boid.color;
 		fill_circle (truncate x) (truncate y) 3
 
-let n = 200
+let n = 50
 
 let uniform n a = Array.init n (fun _ -> Array.make n a)
 	(** Array.make_matrix... *)
 let rules = [
-	Cohesion (uniform n 0.001, uniform n 0.1, uniform n 100.);
-	Cohesion (uniform n (-0.01), uniform n 0.3, uniform n 30.);
-	Alignment (uniform n 0.001, uniform n 0.01, uniform n 100.)
+	Array.make n 0.01, Cohesion (uniform n 1., uniform n 0.2, uniform n 100.);
+	Array.make n (-1.), Cohesion (uniform n 1., uniform n 1., uniform n 20.);
+	Array.make n 0.1, Alignment (uniform n 1., uniform n 0.2, uniform n 100.);
+	Array.make n 1., Inertia (Array.make n 0.85)
 ]
 (* TODO : Procédures pratiques de construction de règle *)
 
