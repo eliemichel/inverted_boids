@@ -13,15 +13,15 @@ let draw_boid boid =
 		set_color boid.color;
 		fill_circle (truncate x) (truncate y) 3
 
-let n = 50
+let n = 100
 
 let uniform n a = Array.init n (fun _ -> Array.make n a)
 	(** Array.make_matrix... *)
 let rules = [
-	Array.make n 0.01, Cohesion (uniform n 1., uniform n 0.2, uniform n 100.);
-	Array.make n (-1.), Cohesion (uniform n 1., uniform n 1., uniform n 20.);
-	Array.make n 0.1, Alignment (uniform n 1., uniform n 0.2, uniform n 100.);
-	Array.make n 1., Inertia (Array.make n 0.85)
+	Array.make n 0.001, Cohesion (uniform n 1., uniform n 0.5, uniform n 100.);
+	Array.make n (-1.), Cohesion (uniform n 1., uniform n 2., uniform n 20.);
+	Array.make n 1., Alignment (uniform n 1., uniform n 0.5, uniform n 100.);
+	Array.make n 0., Inertia
 ]
 (* TODO : Procédures pratiques de construction de règle *)
 
