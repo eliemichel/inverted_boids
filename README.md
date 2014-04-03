@@ -101,16 +101,23 @@ Après avoir donné quelques exemples de ce que le modèle devrait être capable
 
  - Alignement :
 
-$F_a = \displaystyle\sum_jM_{ij}f_{\lambda_{ij}, \alpha_{ij}}(||x_j - x_i||)v_i$
+$F_a = \displaystyle\frac{\sum_jM_{ij}f_{\lambda_{ij}, \alpha_{ij}}(||x_j - x_i||)v_i}{\sum_jM_{ij}f_{\lambda_{ij},\alpha_{ij}}(||x_j - x_i||)}$
 
  - Cohésion :
 
-$F_c = \displaystyle\sum_jM_{ij}f_{\lambda_{ij}, \alpha_{ij}}(||x_j - x_i||)(x_j - x_i)$
+$F_c = \displaystyle\frac{\sum_jM_{ij}f_{\lambda_{ij}, \alpha_{ij}}(||x_j - x_i||)(x_j - x_i)}{\sum_jM_{ij}f_{\lambda_{ij},\alpha_{ij}}(||x_j - x_i||)}$
 
+ - Répulsion :
+ 
+$F_r = \displaystyle\sum_jM_{ij}\frac{f_{\lambda_{ij}, \alpha{ij}}(||x_j - x_i||)}{||x_j - x_i||^2}(x_i - x_j)$
+
+ - Inertie :
+ 
+$F_i = v_i$
 
 On regroupe les différentes règles comme si elles étaient des forces, par le principe de la dynamique discrétisé :
 
-$v_{n+1} = v_n + \delta (\displaystyle\sum_{\text{règle} r}F_r)$
+$v_{n+1} = v_n + \delta (\displaystyle\sum_{\text{règle} r}\beta_r F_r)$
 
 Où $\delta$ (qui est homogène à une masse fois un temps) est déterminé arbitrairement car éventuellement corrigé par la matrice $M$, bien que cette correction soit abusive d'un point de vue physique (qui n'est pas notre point de vue ici).
 

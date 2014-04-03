@@ -15,6 +15,7 @@ type rule_param = (float array array * float array array * float array array)
 type _rule =
 	| Cohesion of rule_param
 	| Alignment of rule_param
+	| Repulsion of rule_param
 	| Inertia
 type rule = float array * _rule
 
@@ -59,6 +60,10 @@ let d (a,b) (c,d) =
 	let dy = if absy < capy /. 2. then absy else capy -. absy in
 	sqrt (dx *. dx +. dy *. dy)
 
+let not_normalize v =
+	if v = zero then zero
+	else v // (norm2 v)
+
 let random_pos xmin xmax ymin ymax =
 	(xmin +. (Random.float (xmax -. xmin))),
 	(ymin +. (Random.float (ymax -. ymin)))
@@ -98,16 +103,21 @@ let sum2 n f =
 let step_rule_single boids (beta,rule) i =
 	let f,s = match rule with
 		| Cohesion param ->
-			sum (Array.length boids) (fun j ->
+			sum2 (Array.length boids) (fun j ->
 				let c = coef boids param i j in
-				  (boids.(j).pos --- boids.(i).pos) ** c
+				  (boids.(j).pos --- boids.(i).pos) ** c, c
 				  	
-			), 1.
+			)
 		| Alignment param ->
 			sum2 (Array.length boids) (fun j ->
 				let c = coef boids param i j in
 					boids.(j).v ** c, c
 			)
+		| Repulsion param ->
+			sum (Array.length boids) (fun j ->
+				let c = coef boids param i j in
+					not_normalize (boids.(i).pos --- boids.(j).pos) ** c
+			), 1.
 		| Inertia -> boids.(i).v, 1.
 	in f ** (beta.(i) /. s)
 
