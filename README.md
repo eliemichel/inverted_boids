@@ -144,7 +144,7 @@ Les hypothèses auxquelles nous avons pensé sont par exemple :
 
  - Il y a un intru parmis les agents : Il existe $i$ tel que les matrices privées de leurs colonne et ligne d'indice $i$ soient uniformes. On peut aussi supposer que les colonnes (resp. lignes) d'indice $i$ sont également uniformes.
 
- - Il y a deux populations distinctes. Les matrices sont donc de la forme $\left(\begin{array}{c}AB \\ CD\end{array}\right)$ où $A$, $B$, $C$ et $D$ sont uniforme. A et D représentent respectivement le comportement interne de la première et de la seconde population et B et C définissent leur façon d'intéragir.
+ - Il y a deux populations distinctes. Les matrices sont donc de la forme $\left(\begin{array}{c}AB \\ CD\end{array}\right)$ où $A$, $B$, $C$ et $D$ sont uniforme. $A$ et $D$ représentent respectivement le comportement interne de la première et de la seconde population et $B$ et $C$ définissent leur façon d'intéragir.
 
 On peut bien sûr trouver d'autres idées.
 
