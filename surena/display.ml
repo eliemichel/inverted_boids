@@ -8,7 +8,7 @@ open Engine
 
 let dump_file = ref ""
 
-let _ = Random.init (int_of_float (100000. *. Sys.time ()))
+let _ = Random.init (int_of_float (100. *. Unix.time ()))
 
 let draw_boid boid =
 	let x,y = boid.pos in
