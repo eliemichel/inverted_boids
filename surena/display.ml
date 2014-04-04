@@ -8,6 +8,8 @@ open Engine
 
 let dump_file = ref ""
 
+let _ = Random.init (int_of_float (100000. *. Sys.time ()))
+
 let draw_boid boid =
 	let x,y = boid.pos in
 		set_color boid.color;
@@ -96,6 +98,12 @@ let rules =
 		ab, Alignment (am,aa,al);
 		ib, Inertia
 	] in
+	cb.(0) <- 0.1;
+	for i = 1 to n - 1 do
+		rl.(i).(0) <- 100.;
+		ra.(i).(0) <- 1.;
+		rm.(i).(0) <- 10.
+	done;
 	rules
 
 
@@ -104,12 +112,12 @@ let rules =
 let boids = Array.init n (fun i -> default_boid ())
 
 let () =
-	for k = 0 to n/2 - 1 do
+	boids.(0) <- { boids.(0) with color = Graphics.black };
+	for k = 1 to n/2 - 1 do
 		boids.(k) <- { boids.(k) with color = Graphics.blue }
 	done
 
 let main arg =
-	Random.self_init ();
 	open_graph " 600x600";
 	set_window_title "Boids";
 	auto_synchronize false;
