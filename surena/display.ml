@@ -16,6 +16,19 @@ let draw_boid boid =
 let n = 200
 
 let uniform n a = Array.init n (fun _ -> Array.make n a)
+
+let quadblock n a b c d =
+	Array.init n (fun i -> Array.init n (fun j ->
+		if i < n/2
+		then
+			if j < n/2
+			then a
+			else b
+		else
+			if j < n/2
+			then c
+			else d
+	))
 	(** Array.make_matrix... *)
 (* let rules = [
 	Array.make n 0.01, Cohesion (uniform n 1., uniform n 0.5, uniform n 100.);
@@ -46,6 +59,7 @@ let rules cb cm ca cl rb rm ra rl ab am aa al ib =
 	] in
 	rules,(cb,cm,ca,cl),(rb,rm,ra,rl),(ab,am,aa,al),ib
 
+
 let rules =
 	let rules,(cb,_,_,_),(_,rm,ra,rl),_,_ = rules
 		0.01 1. 0.5 100.
@@ -60,9 +74,39 @@ let rules =
 	done;
 	rules
 
+
+
+let rules =
+	let cb = Array.make n 0.01 in
+	let cm = quadblock n 1. 0. 0. 1. in
+	let ca = quadblock n 0.5 0. 0. 0.5 in
+	let cl = quadblock n 100. 0. 0. 100. in
+	let rb = Array.make n 10. in
+	let rm = quadblock n 1. 0. 0. 1. in
+	let ra = quadblock n 2. 0. 0. 2. in
+	let rl = quadblock n 20. 0. 0. 20. in
+	let ab = Array.make n 0.5 in
+	let am = quadblock n 1. 0. 0. 1. in
+	let aa = quadblock n 0.5 0. 0. 0.5 in
+	let al = quadblock n 100. 0. 0. 100. in
+	let ib = Array.make n 0.5 in
+	let rules = [
+		cb, Cohesion (cm,ca,cl);
+		rb, Repulsion (rm,ra,rl);
+		ab, Alignment (am,aa,al);
+		ib, Inertia
+	] in
+	rules
+
+
+
+
 let boids = Array.init n (fun i -> default_boid ())
 
-let () = boids.(0) <- { boids.(0) with color = Graphics.blue }
+let () =
+	for k = 0 to n/2 - 1 do
+		boids.(k) <- { boids.(k) with color = Graphics.blue }
+	done
 
 let main arg =
 	Random.self_init ();
