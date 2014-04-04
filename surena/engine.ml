@@ -36,8 +36,10 @@ let (--) (a,b) (c,d) = ((a-.c),(b-.d))
 let ( // ) (a,b) n = ((a/.n),(b/.n))
 let ( ** ) (a,b) n = ((a*.n),(b*.n))
 
-let capx = 600.
-let capy = 600.
+let capxi = 800
+let capyi = 700
+let capx = float capxi
+let capy = float capyi
 let capv = capx, capy
 
 let (---) (a,b) (c,d) =
