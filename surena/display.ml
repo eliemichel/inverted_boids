@@ -77,7 +77,7 @@ let rules =
 	rules
 
 
-
+(* 
 let rules =
 	let cb = Array.make n 0.01 in
 	let cm = quadblock n 1. 0. 0. 1. in
@@ -105,6 +105,7 @@ let rules =
 		rm.(i).(0) <- 10.
 	done;
 	rules
+*)
 
 let nb_cycles = ref (-1)
 
@@ -127,13 +128,11 @@ let main () =
 		set_window_title "Boids";
 		auto_synchronize false
 	) else (
-		output_value oc Engine.capx;
-		output_value oc Engine.capy;
 		output_value oc n
 	);
 	let i = ref 0 in
 	while !dump_file = "" && not (key_pressed () && read_key () = 'q')
-		|| not (!nb_cycles > 0 && !i >= !nb_cycles) do
+		|| !nb_cycles > 0 && !i < !nb_cycles do
 		if !dump_file = "" then (
 			clear_graph ();
 			Array.iter draw_boid boids;
