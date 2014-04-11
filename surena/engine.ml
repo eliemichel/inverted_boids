@@ -115,7 +115,7 @@ let step_rule_single boids (beta,rule) i =
 		| Alignment param ->
 			sum2 (Array.length boids) (fun j ->
 				let c = coef boids param i j in
-					boids.(j).v ** c, c
+					boids.(j).v ** c, c *. (norm boids.(j).v)
 			)
 		| Repulsion param ->
 			sum (Array.length boids) (fun j ->
@@ -135,7 +135,10 @@ let add_to_boids boids vec =
 	done
 
 let update_pos boids =
-	Array.iter (fun b -> b.pos <- real_mod2 (b.pos ++ b.v) capv) boids
+	Array.iter (fun b ->
+		if b.alive
+		then b.pos <- real_mod2 (b.pos ++ b.v) capv
+	) boids
 
 let step boids rules =
 	(**
