@@ -35,24 +35,29 @@ let random_float a b = Random.float (b -. a) +. a
 
 (*
 	Résolution dans le cas où les paramètres sont uniformes.
-	On suppose alpha constant.
+	On suppose alpha et les longueurs constants.
 	cm, am ne servent à rien, rm ne sert à rien pour d'autres raisons,
 	les paramètres sont :
-		cb cl
-		rb rl
-		ab al
+		cb
+		rb
+		ab
 		ib
 	tous de type float.
 *)
 
 let alpha = 0.5
 
+let lc = 100.
+
+let lr = 20.
+
 let get_coeff t =
-	t.(0), t.(1), t.(2), t.(3), t.(4), t.(5), t.(6)
+	t.(0), t.(1), t.(2), t.(3)
 	(* sale *)
 
+(*
 let rules n alpha t = 
-	let (cb,cl,rb,rl,ab,al,ib) = get_coeff t in
+	let (cb,rb,ab,ib) = get_coeff t in
 	Array.([
 		make n cb, Cohesion
 			(make_matrix n n 1., make_matrix n n alpha, make_matrix n n cl);
@@ -67,27 +72,90 @@ let (+++) t1 t2 = Array.init (Array.length t1) (fun i -> t1.(i) +. t2.(i))
 
 let ( *** ) t1 c = Array.init (Array.length t1) (fun i -> t1.(i) *. c)
 
-let calc_grad_single data rules i =
-	let boids = step data.(i) rules in
-	()
+*)
 
+let sum4 n f =
+	let rec aux = function
+		| 0 -> (0.,0.,0.,0.)
+		| n ->
+			let i = n - 1 in
+			let a,b,c,d = f i in
+			let e,f,g,h = aux i in
+			(a +. e, b +. f, c +. g, d +. h) in
+	aux n
+
+let calc_grad_single data (cb,rb,ab,ib) i =
+	let boids = data.(i) in
+	let grad j =
+		let sum_c = 
+			let v,c = sum2 (Array.length boids) (fun k ->
+				let c = sigmoid alpha lc (d boids.(j).pos boids.(k).pos) in
+				(boids.(k).pos --- boids.(j).pos) ** c, c) in
+			v // c in
+		let sum_r =
+			sum (Array.length boids) (fun k ->
+				not_normalize (boids.(j).pos --- boids.(k).pos)
+					** (sigmoid alpha lr (d boids.(j).pos boids.(k).pos))) in
+		let sum_a =
+			let v,c = sum2 (Array.length boids) (fun k ->
+				let c = sigmoid alpha lc (d boids.(j).pos boids.(k).pos) in
+				boids.(k).v ** c, c) in
+			v // c in
+		let v = (sum_c ** cb) ++ (sum_r ** rb) ++ (sum_a ** ab)
+			++ (boids.(j).v ** ib) in
+		let aux s = 2. *. (scalar s (v -- data.(i+1).(j).v)) in
+		aux sum_c, aux sum_r, aux sum_a, aux boids.(j).v in
+	sum4 (Array.length boids) grad
+			
+let calc_grad n data param =
+	let t = Array.init n (fun i -> Random.int (Array.length data - 1)) in
+	let a,b,c,d = sum4 n
+		(fun i -> calc_grad_single data param t.(i)) in
+	let nf  = float n in
+	a /. nf, b /. nf, c /. nf, d /. nf
+	
+let apply_grad eta n data (cb,rb,ab,ib) =
+	let a,b,c,d = calc_grad n data (cb,rb,ab,ib) in
+	let aux a b = a -. eta *. b in
+	aux cb a, aux rb b, aux ab c, aux ib d
+	
 let read_data name =
 	let ic = open_in_bin name in
 	let nb_cycles = input_value ic in
 	let n = input_value ic in
-	Array.init nb_cycles (fun i ->
-		Array.init n (fun j -> input_value ic))
+	let res = Array.init nb_cycles (fun i ->
+		Array.init n (fun j -> input_value ic)) in
+	close_in ic; res
 
-let main filename =
-	() (* TODO *)
+let nb_gens = ref 1000
+
+let nb_grads = ref 100
+
+let eta = ref 0.001
+
+let name = ref ""
+
+let main () =
+	let data = read_data !name in
+	let init_param = (0.01,10.,0.5,0.5) in
+	let rec loop param = function
+		| 0 -> param
+		| n -> loop (apply_grad !eta !nb_grads data param) (n-1) in
+	let cb,rb,ab,ib = loop init_param !nb_gens in
+	Printf.printf "cb = %f\nrb = %f\nab = %f\nib = %f\n" cb rb ab ib
 
 
 let () = Arg.parse
-	[]
-	main
+	["-n", Arg.Set_int nb_gens,
+		"number of cycles to run";
+	"-ng", Arg.Set_int nb_grads,
+		"number of instances to use when computing the gradient";
+	"-l", Arg.Set_float eta,
+		"learning rate"]
+	(fun s -> name := s)
 	"Usage : invert data.\n\
 	Tries to recover the parameters given to a simulation from the position\n\
 	outut. These data are given as first argument.\n\
-	The available options are :"
-
+	The available options are :";
+	main ()
 

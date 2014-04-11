@@ -65,7 +65,7 @@ let rules cb cm ca cl rb rm ra rl ab am aa al ib =
 let rules =
 	let rules,(cb,_,_,_),(_,rm,ra,rl),_,_ = rules
 		0.01 1. 0.5 100.
-		10. 1. 2. 20.
+		10. 1. 0.5 20.
 		0.5 1. 0.5 100.
 		0.5 in
 (*	cb.(0) <- 0.1;

@@ -27,6 +27,8 @@ let real_mod2 (a,b) (c,d) = real_mod a c, real_mod b d
 
 let zero = (0.,0.)
 
+let scalar (x,y) (u,v) = x *. u +. y *. v
+
 let norm2 (x,y) = x *. x +. y *. y
 
 let norm v = sqrt (norm2 v)
