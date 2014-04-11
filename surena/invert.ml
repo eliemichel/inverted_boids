@@ -74,14 +74,14 @@ let ( *** ) t1 c = Array.init (Array.length t1) (fun i -> t1.(i) *. c)
 
 *)
 
-let sum4 n f =
+let sum41 n f =
 	let rec aux = function
-		| 0 -> (0.,0.,0.,0.)
+		| 0 -> ((0.,0.,0.,0.),0.)
 		| n ->
 			let i = n - 1 in
-			let a,b,c,d = f i in
-			let e,f,g,h = aux i in
-			(a +. e, b +. f, c +. g, d +. h) in
+			let (a,b,c,d),x = f i in
+			let (e,f,g,h),y = aux i in
+			((a +. e, b +. f, c +. g, d +. h), x +. y) in
 	aux n
 
 let calc_grad_single data (cb,rb,ab,ib) i =
@@ -104,20 +104,22 @@ let calc_grad_single data (cb,rb,ab,ib) i =
 		let v = (sum_c ** cb) ++ (sum_r ** rb) ++ (sum_a ** ab)
 			++ (boids.(j).v ** ib) in
 		let aux s = 2. *. (scalar s (v -- data.(i+1).(j).v)) in
-		aux sum_c, aux sum_r, aux sum_a, aux boids.(j).v in
-	sum4 (Array.length boids) grad
+		(aux sum_c /. 100., aux sum_r, aux sum_a, aux boids.(j).v),
+			norm2 (v -- data.(i+1).(j).v) in
+	sum41 (Array.length boids) grad
 			
 let calc_grad n data param =
 	let t = Array.init n (fun i -> Random.int (Array.length data - 1)) in
-	let a,b,c,d = sum4 n
+	let (a,b,c,d),cost = sum41 n
 		(fun i -> calc_grad_single data param t.(i)) in
 	let nf  = float n in
-	a /. nf, b /. nf, c /. nf, d /. nf
+(*	Printf.printf "grad = (%f ; %f ; %f ; %f)\n" a b c d; *)
+	(a /. nf, b /. nf, c /. nf, d /. nf), cost /. nf
 	
 let apply_grad eta n data (cb,rb,ab,ib) =
-	let a,b,c,d = calc_grad n data (cb,rb,ab,ib) in
-	let aux a b = a -. eta *. b in
-	aux cb a, aux rb b, aux ab c, aux ib d
+	let (a,b,c,d),cost = calc_grad n data (cb,rb,ab,ib) in
+	let aux x y = x -. eta *. y /. (float (Array.length data.(0))) in
+	(aux cb a, aux rb b, aux ab c, aux ib d), cost
 	
 let read_data name =
 	let ic = open_in_bin name in
@@ -137,12 +139,21 @@ let name = ref ""
 
 let main () =
 	let data = read_data !name in
-	let init_param = (0.01,10.,0.5,0.5) in
+	let init_param = (0.02,5.,1.5,0.4) in
+	let print (cb,rb,ab,ib) =
+		Printf.printf "cb = %f\nrb = %f\nab = %f\nib = %f\n" cb rb ab ib in
 	let rec loop param = function
 		| 0 -> param
-		| n -> loop (apply_grad !eta !nb_grads data param) (n-1) in
-	let cb,rb,ab,ib = loop init_param !nb_gens in
-	Printf.printf "cb = %f\nrb = %f\nab = %f\nib = %f\n" cb rb ab ib
+		| n ->
+			let param,cost = apply_grad !eta !nb_grads data param in
+			Printf.printf "====================\n";
+			Printf.printf "n = %d\n" (!nb_gens - n);
+			print param;
+			Printf.printf "c = %f\n%!" cost;
+(*			Scanf.scanf "%s\n" (fun s -> ()); *)
+			loop param (n-1) in
+	let param = loop init_param !nb_gens in
+	print param
 
 
 let () = Arg.parse
