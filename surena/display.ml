@@ -63,11 +63,16 @@ let rules cb cm ca cl rb rm ra rl ab am aa al ib =
 
 
 let rules =
-	let rules,(cb,_,_,_),(_,rm,ra,rl),_,_ = rules
+(*	let rules,(cb,_,_,_),(_,rm,ra,rl),_,_ = rules
 		0.01 1. 0.5 100.
 		10. 1. 0.5 20.
 		0.5 1. 0.5 100.
-		0.5 in
+		0.5 in *)
+	let rules,(cb,_,_,_),(_,rm,ra,rl),_,_ = rules
+		0.0073 1. 0.5 100.
+		5.002 1. 0.5 20.
+		0.73849 1. 0.5 100.
+		0.363 in	
 (*	cb.(0) <- 0.1;
 	for i = 1 to n - 1 do
 		rl.(i).(0) <- 100.;

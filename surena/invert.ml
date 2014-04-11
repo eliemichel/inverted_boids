@@ -111,7 +111,7 @@ let calc_grad_single data pre_calc (cb,rb,ab,ib) i =
 		let v = (sum_c ** cb) ++ (sum_r ** rb) ++ (sum_a ** ab)
 			++ (boids.(j).v ** ib) in
 		let aux s = 2. *. (scalar s (v -- data.(i+1).(j).v)) in
-		(aux sum_c (* /. 100. *), aux sum_r, aux sum_a, aux boids.(j).v),
+		(aux sum_c /. 100., aux sum_r *. 100., aux sum_a, aux boids.(j).v),
 			norm2 (v -- data.(i+1).(j).v) in
 	sum41 (Array.length boids) grad
 			
@@ -156,11 +156,11 @@ let main () =
 		| n ->
 			let param,cost = apply_grad (!eta /. sqrt (float (!nb_gens - n + 1)))
 				!nb_grads data pre_calc param in
-			Printf.printf "====================\n";
+(*			Printf.printf "====================\n";
 			Printf.printf "n = %d\n" (!nb_gens - n);
 			print param;
 			Printf.printf "c = %f\n%!" cost;
-(*			Scanf.scanf "%s\n" (fun s -> ()); *)
+			Scanf.scanf "%s\n" (fun s -> ()); *)
 			loop param (n-1) in
 	let param = loop init_param !nb_gens in
 	print param
