@@ -84,9 +84,9 @@ let sum41 n f =
 			((a +. e, b +. f, c +. g, d +. h), x +. y) in
 	aux n
 
-let calc_grad_single data (cb,rb,ab,ib) i =
+let pre_calc data = Array.init (Array.length data) (fun i ->
 	let boids = data.(i) in
-	let grad j =
+	Array.init (Array.length boids) (fun j ->
 		let sum_c = 
 			let v,c = sum2 (Array.length boids) (fun k ->
 				let c = sigmoid alpha lc (d boids.(j).pos boids.(k).pos) in
@@ -101,23 +101,31 @@ let calc_grad_single data (cb,rb,ab,ib) i =
 				let c = sigmoid alpha lc (d boids.(j).pos boids.(k).pos) in
 				boids.(k).v ** c, c) in
 			v // c in
+		sum_c, sum_r, sum_a))
+    
+
+let calc_grad_single data pre_calc (cb,rb,ab,ib) i =
+	let boids = data.(i) in
+	let grad j =
+		let sum_c, sum_r, sum_a = pre_calc.(i).(j) in
 		let v = (sum_c ** cb) ++ (sum_r ** rb) ++ (sum_a ** ab)
 			++ (boids.(j).v ** ib) in
 		let aux s = 2. *. (scalar s (v -- data.(i+1).(j).v)) in
-		(aux sum_c /. 100., aux sum_r, aux sum_a, aux boids.(j).v),
+		(aux sum_c (* /. 100. *), aux sum_r, aux sum_a, aux boids.(j).v),
 			norm2 (v -- data.(i+1).(j).v) in
 	sum41 (Array.length boids) grad
 			
-let calc_grad n data param =
-	let t = Array.init n (fun i -> Random.int (Array.length data - 1)) in
+let calc_grad n data pre_calc param =
+(*	let t = Array.init n (fun i -> Random.int (Array.length data - 1)) in *)
+	let t = Array.init (Array.length data - 1) (fun x -> x) in
 	let (a,b,c,d),cost = sum41 n
-		(fun i -> calc_grad_single data param t.(i)) in
-	let nf  = float n in
+		(fun i -> calc_grad_single data pre_calc param t.(i)) in
+	let nf  = float (Array.length data - 1) in
 (*	Printf.printf "grad = (%f ; %f ; %f ; %f)\n" a b c d; *)
 	(a /. nf, b /. nf, c /. nf, d /. nf), cost /. nf
 	
-let apply_grad eta n data (cb,rb,ab,ib) =
-	let (a,b,c,d),cost = calc_grad n data (cb,rb,ab,ib) in
+let apply_grad eta n data pre_calc (cb,rb,ab,ib) =
+	let (a,b,c,d),cost = calc_grad n data pre_calc (cb,rb,ab,ib) in
 	let aux x y = x -. eta *. y /. (float (Array.length data.(0))) in
 	(aux cb a, aux rb b, aux ab c, aux ib d), cost
 	
@@ -133,19 +141,21 @@ let nb_gens = ref 1000
 
 let nb_grads = ref 100
 
-let eta = ref 0.001
+let eta = ref 1.
 
 let name = ref ""
 
 let main () =
 	let data = read_data !name in
+	let pre_calc = pre_calc data in
 	let init_param = (0.02,5.,1.5,0.4) in
 	let print (cb,rb,ab,ib) =
 		Printf.printf "cb = %f\nrb = %f\nab = %f\nib = %f\n" cb rb ab ib in
 	let rec loop param = function
 		| 0 -> param
 		| n ->
-			let param,cost = apply_grad !eta !nb_grads data param in
+			let param,cost = apply_grad (!eta /. sqrt (float (!nb_gens - n + 1)))
+				!nb_grads data pre_calc param in
 			Printf.printf "====================\n";
 			Printf.printf "n = %d\n" (!nb_gens - n);
 			print param;
