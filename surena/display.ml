@@ -63,34 +63,28 @@ let rules cb cm ca cl rb rm ra rl ab am aa al ib =
 
 
 let rules =
-	let rules,(cb,cm,ca,cl),(_,rm,ra,rl),(ab,am,aa,al),_ = rules
-		0.02 1. 0.5 100.
-		10. 1. 2. 20.
-		5. 1. 0.5 100.
-		0.4 in
-	cb.(0) <- 0.1;
+	let rules,(cb,_,_,_),(_,rm,ra,rl),_,_ = rules
+		0.01 1. 0.5 100.
+		10. 1. 0.5 20.
+		0.5 1. 0.5 100.
+		0.5 in
+(*	cb.(0) <- 0.1;
 	for i = 1 to n - 1 do
 		rl.(i).(0) <- 100.;
 		ra.(i).(0) <- 1.;
-		rm.(i).(0) <- 10.;
-		cl.(i).(1) <- 1000.;
-		ca.(i).(1) <- 1.;
-		cm.(i).(1) <- 1000.;
-		rm.(i).(1) <- 0.;
-		am.(i).(1) <- 0.;
-		cb.(1) <- 100.
-	done;
+		rm.(i).(0) <- 10.
+	done; *)
 	rules
 
 
-(*
+(* 
 let rules =
 	let cb = Array.make n 0.01 in
 	let cm = quadblock n 1. 0. 0. 1. in
 	let ca = quadblock n 0.5 0. 0. 0.5 in
 	let cl = quadblock n 100. 0. 0. 100. in
 	let rb = Array.make n 10. in
-	let rm = quadblock n 1. 0.1 0.1 1. in
+	let rm = quadblock n 1. 0. 0. 1. in
 	let ra = quadblock n 2. 0. 0. 2. in
 	let rl = quadblock n 20. 0. 0. 20. in
 	let ab = Array.make n 0.5 in
@@ -108,35 +102,20 @@ let rules =
 	for i = 1 to n - 1 do
 		rl.(i).(0) <- 100.;
 		ra.(i).(0) <- 1.;
-		rm.(i).(0) <- 10.;
-		rl.(0).(i) <- 100.;
-		ra.(0).(i) <- 1.;
-		rm.(0).(i) <- 10.
+		rm.(i).(0) <- 10.
 	done;
 	rules
-<<<<<<< HEAD
 *)
 
-
-=======
-
 let nb_cycles = ref (-1)
->>>>>>> db301d6a4781fae974f2bb78fe9be74b38a657b1
 
 let boids = Array.init n (fun i -> default_boid ())
 
 let () =
 	boids.(0) <- { boids.(0) with color = Graphics.black };
-	boids.(1) <- {
-		alive = false;
-		pos = 300., 300.;
-		color = Graphics.green;
-		v = 0., 0.
-	}
-	(*;
 	for k = 1 to n/2 - 1 do
 		boids.(k) <- { boids.(k) with color = Graphics.blue }
-	done*)
+	done
 
 let main () =
 	let oc =
@@ -149,13 +128,12 @@ let main () =
 		set_window_title "Boids";
 		auto_synchronize false
 	) else (
-		output_value oc Engine.capx;
-		output_value oc Engine.capy;
+		output_value oc !nb_cycles;
 		output_value oc n
 	);
 	let i = ref 0 in
 	while !dump_file = "" && not (key_pressed () && read_key () = 'q')
-		|| not (!nb_cycles > 0 && !i >= !nb_cycles) do
+		|| !nb_cycles > 0 && !i < !nb_cycles do
 		if !dump_file = "" then (
 			clear_graph ();
 			Array.iter draw_boid boids;
