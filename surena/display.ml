@@ -39,40 +39,44 @@ let quadblock n a b c d =
 ] *)
 (* TODO : Procédures pratiques de construction de règle *)
 
-let rules cb cm ca cl rb rm ra rl ab am aa al ib =
-	let cb = Array.make n cb in
+let rules cm ca cl rm ra rl am aa al im sm =
+(*	let cb = Array.make n cb in *)
 	let cm = uniform n cm in
 	let ca = uniform n ca in
 	let cl = uniform n cl in
-	let rb = Array.make n rb in
+(*	let rb = Array.make n rb in *)
 	let rm = uniform n rm in
 	let ra = uniform n ra in
 	let rl = uniform n rl in
-	let ab = Array.make n ab in
+(*	let ab = Array.make n ab in *)
 	let am = uniform n am in
 	let aa = uniform n aa in
 	let al = uniform n al in
-	let ib = Array.make n ib in
+	let im = Array.make n im in
+	let sm = Array.make n sm in
 	let rules = [
-		cb, Cohesion (cm,ca,cl);
-		rb, Repulsion (rm,ra,rl);
-		ab, Alignment (am,aa,al);
-		ib, Inertia
+		Cohesion (cm,ca,cl);
+		Repulsion (rm,ra,rl);
+		Alignment (am,aa,al);
+		Inertia im;
+		Stay sm
 	] in
-	rules,(cb,cm,ca,cl),(rb,rm,ra,rl),(ab,am,aa,al),ib
+	rules,(cm,ca,cl),(rm,ra,rl),(am,aa,al),im,sm
 
 
 let rules =
+	let rules,(cm,_,_),(rm,ra,rl),_,_,_ = rules
+		0.001 0.5 100.
+		10. 0.5 20.
+		0.005 0.5 100.
+		0.9
+		10. in
 (*	let rules,(cb,_,_,_),(_,rm,ra,rl),_,_ = rules
-		0.01 1. 0.5 100.
-		10. 1. 0.5 20.
-		0.5 1. 0.5 100.
-		0.5 in *)
-	let rules,(cb,_,_,_),(_,rm,ra,rl),_,_ = rules
 		0.0073 1. 0.5 100.
 		5.002 1. 0.5 20.
 		0.73849 1. 0.5 100.
-		0.363 in	
+		0.363 in
+*)
 (*	cb.(0) <- 0.1;
 	for i = 1 to n - 1 do
 		rl.(i).(0) <- 100.;

@@ -16,7 +16,8 @@ type _rule =
 	| Cohesion of rule_param
 	| Alignment of rule_param
 	| Repulsion of rule_param
-	| Inertia
+	| Inertia of float array
+	| Stay of float array
 type rule = float array * _rule
 
 let real_mod a b =
@@ -57,12 +58,14 @@ let (---) (a,b) (c,d) =
 		else dy in
 	rx,ry
 
-let d (a,b) (c,d) =
+let d_mod (a,b) (c,d) =
 	let absx = abs_float (a -. c) in
 	let absy = abs_float (b -. d) in
 	let dx = if absx < capx /. 2. then absx else capx -. absx in
 	let dy = if absy < capy /. 2. then absy else capy -. absy in
 	sqrt (dx *. dx +. dy *. dy)
+
+let d a b = norm (a -- b)
 
 let not_normalize v =
 	if v = zero then zero
@@ -104,26 +107,34 @@ let sum2 n f =
 			a2 ++ a, b2 +. b
 	in aux n
 
-let step_rule_single boids (beta,rule) i =
-	let f,s = match rule with
-		| Cohesion param ->
-			sum2 (Array.length boids) (fun j ->
-				let c = coef boids param i j in
-				  (boids.(j).pos --- boids.(i).pos) ** c, c
-				  	
-			)
-		| Alignment param ->
-			sum2 (Array.length boids) (fun j ->
-				let c = coef boids param i j in
-					boids.(j).v ** c, c *. (norm boids.(j).v)
-			)
-		| Repulsion param ->
-			sum (Array.length boids) (fun j ->
-				let c = coef boids param i j in
-					not_normalize (boids.(i).pos --- boids.(j).pos) ** c
-			), 1.
-		| Inertia -> boids.(i).v, 1.
-	in f ** (beta.(i) /. s)
+let step_rule_single boids (rule) i =
+	match rule with
+	| Cohesion param ->
+		sum (Array.length boids) (fun j ->
+			let c = coef boids param i j in
+			  (boids.(j).pos -- boids.(i).pos) ** c
+			  	
+		)
+	| Alignment param ->
+		sum (Array.length boids) (fun j ->
+			let c = coef boids param i j in
+				boids.(j).v ** c
+		)
+	| Repulsion param ->
+		sum (Array.length boids) (fun j ->
+			let c = coef boids param i j in
+				not_normalize (boids.(i).pos -- boids.(j).pos) ** c
+		)
+	| Inertia param -> boids.(i).v ** param.(i)
+	| Stay param ->
+		let x,y = boids.(i).pos in
+		let fx = if x < 0. then param.(i)
+			else if x > capx then -. param.(i)
+			else 0. in
+		let fy = if y < 0. then param.(i)
+			else if y > capy then -. param.(i)
+			else 0. in
+		(fx,fy)
 
 let step_rule boids rule =
 	Array.init (Array.length boids) (step_rule_single boids rule)
@@ -137,7 +148,8 @@ let add_to_boids boids vec =
 let update_pos boids =
 	Array.iter (fun b ->
 		if b.alive
-		then b.pos <- real_mod2 (b.pos ++ b.v) capv
+		(* then b.pos <- real_mod2 (b.pos ++ b.v) capv *)
+		then b.pos <- b.pos ++ b.v
 	) boids
 
 let step boids rules =
