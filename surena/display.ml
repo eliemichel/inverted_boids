@@ -65,24 +65,30 @@ let rules cm ca cl rm ra rl am aa al im sm =
 
 
 let rules =
-	let rules,(cm,_,_),(rm,ra,rl),_,_,_ = rules
+	let rules,(cm,_,cl),(rm,_,rl),(am,_,_),im,sm = rules
 		0.001 0.5 100.
-		10. 0.5 20.
-		0.005 0.5 100.
-		0.9
-		10. in
+		10. 1.0 20.
+		0.01 0.5 100.
+		1.
+		0.25 in
 (*	let rules,(cb,_,_,_),(_,rm,ra,rl),_,_ = rules
 		0.0073 1. 0.5 100.
 		5.002 1. 0.5 20.
 		0.73849 1. 0.5 100.
 		0.363 in
 *)
-(*	cb.(0) <- 0.1;
+	im.(0) <- 0.95;
+	sm.(0) <- 1.;
 	for i = 1 to n - 1 do
-		rl.(i).(0) <- 100.;
-		ra.(i).(0) <- 1.;
-		rm.(i).(0) <- 10.
-	done; *)
+		cl.(0).(i) <- 300.;
+		cm.(0).(i) <- 0.1;
+		cm.(i).(0) <- 0.;
+		am.(i).(0) <- 0.;
+		am.(0).(i) <- 0.;
+		rl.(i).(0) <- 150.;
+		rm.(i).(0) <- 100.;
+		rm.(0).(i) <- 0.
+	done;
 	rules
 
 

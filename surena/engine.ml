@@ -67,6 +67,10 @@ let d_mod (a,b) (c,d) =
 
 let d a b = norm (a -- b)
 
+let normalize v =
+	if v = zero then zero
+	else v // (norm v)
+
 let not_normalize v =
 	if v = zero then zero
 	else v // (norm2 v)
@@ -77,7 +81,7 @@ let random_pos xmin xmax ymin ymax =
 
 let default_boid () = {
 	pos = random_pos 0. capx 0. capy;
-	v = random_pos (-20.) 20. (-20.) 20.;
+	v = random_pos (-30.) 30. (-30.) 30.;
 	alive = true;
 	color = Graphics.red
 }
@@ -112,13 +116,13 @@ let step_rule_single boids (rule) i =
 	| Cohesion param ->
 		sum (Array.length boids) (fun j ->
 			let c = coef boids param i j in
-			  (boids.(j).pos -- boids.(i).pos) ** c
+			  (normalize (boids.(j).pos -- boids.(i).pos)) ** c
 			  	
 		)
 	| Alignment param ->
 		sum (Array.length boids) (fun j ->
 			let c = coef boids param i j in
-				boids.(j).v ** c
+				(boids.(j).v -- boids.(i).v) ** c
 		)
 	| Repulsion param ->
 		sum (Array.length boids) (fun j ->
@@ -128,11 +132,11 @@ let step_rule_single boids (rule) i =
 	| Inertia param -> boids.(i).v ** param.(i)
 	| Stay param ->
 		let x,y = boids.(i).pos in
-		let fx = if x < 0. then param.(i)
-			else if x > capx then -. param.(i)
+		let fx = if x < 0.05 *. capx then param.(i)
+			else if x > 0.95 *. capx then -. param.(i)
 			else 0. in
-		let fy = if y < 0. then param.(i)
-			else if y > capy then -. param.(i)
+		let fy = if y < 0.05 *. capy then param.(i)
+			else if y > 0.95 *. capy then -. param.(i)
 			else 0. in
 		(fx,fy)
 
