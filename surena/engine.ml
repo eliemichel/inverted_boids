@@ -111,6 +111,15 @@ let sum2 n f =
 			a2 ++ a, b2 +. b
 	in aux n
 
+let stay_v (x,y) = 
+	let fx = if x < 0.05 *. capx then 1.
+			else if x > 0.95 *. capx then (-1.)
+			else 0. in
+	let fy = if y < 0.05 *. capy then 1.
+		else if y > 0.95 *. capy then (-1.)
+		else 0. in
+	(fx,fy)
+
 let step_rule_single boids (rule) i =
 	match rule with
 	| Cohesion param ->
@@ -127,18 +136,11 @@ let step_rule_single boids (rule) i =
 	| Repulsion param ->
 		sum (Array.length boids) (fun j ->
 			let c = coef boids param i j in
-				not_normalize (boids.(i).pos -- boids.(j).pos) ** c
+				(not_normalize (boids.(i).pos -- boids.(j).pos)) ** c
 		)
 	| Inertia param -> boids.(i).v ** param.(i)
 	| Stay param ->
-		let x,y = boids.(i).pos in
-		let fx = if x < 0.05 *. capx then param.(i)
-			else if x > 0.95 *. capx then -. param.(i)
-			else 0. in
-		let fy = if y < 0.05 *. capy then param.(i)
-			else if y > 0.95 *. capy then -. param.(i)
-			else 0. in
-		(fx,fy)
+		(stay_v boids.(i).pos) ** param.(i)
 
 let step_rule boids rule =
 	Array.init (Array.length boids) (step_rule_single boids rule)
