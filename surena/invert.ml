@@ -7,6 +7,8 @@ open Engine
 
 let _ = Random.init (truncate (Unix.time ()))
 
+(* dérivées partielles *)
+
 let sigmoida alpha lambda x =
 	let d = x -. lambda in
 	let e = exp (alpha *. d) in
@@ -22,7 +24,9 @@ let sigmoidx alpha lambda x =
 	let e = exp (alpha *. (x -. lambda)) in
 	let e1 = 1. +. e in
 	-. (alpha *. e) /. (e1 *. e1)
-	
+
+(* les trois à la fois *)
+
 let dsigmoid alpha lambda x =
 	let d = x -. lambda in
 	let e = exp (alpha *. d) in
@@ -31,7 +35,18 @@ let dsigmoid alpha lambda x =
 	let fa = alpha *. f in
 	(-. d *. f), fa, (-. fa)
 
+(* valeur, dérivées par rapport à alpha et lambda *)
+
+let useful_sigmoid alpha lambda x =
+	let d = x -. lambda in
+	let e = exp (alpha *. d) in
+	let e1 = 1. +. e in
+	let f = e /. (e1 *. e1) in
+	((1. /. e1), (-. d *. f), (alpha *. f))
+
 let random_float a b = Random.float (b -. a) +. a
+
+let init_matrix n m f = Array.init n (fun i-> Array.init m (f i))
 
 (**
 	Résolution dans le cas où les paramètres sont uniformes.
@@ -185,9 +200,9 @@ let calc_grad_single2 data pre_calc t i =
 	sumt1 5 (Array.length boids - 1) grad
 
 let calc_grad2 k n data pre_calc param =
-(*	let t = Array.init n (fun i -> Random.int (Array.length data - 1)) in *)
-	let t = Array.init (Array.length data - 1) (fun x -> x) in
-	let n = Array.length t in
+	let t = Array.init n (fun i -> Random.int (Array.length data - 1)) in
+(*	let t = Array.init (Array.length data - 1) (fun x -> x) in
+	let n = Array.length t in *)
 	let grad,cost = sumt1 k n
 		(fun i -> calc_grad_single2 data pre_calc param t.(i)) in
 	let nf  = float n in
@@ -197,6 +212,185 @@ let apply_grad2 k eta n data pre_calc param =
 	let grad,cost = calc_grad2 k n data pre_calc param in
 	(param +++ (grad *** (-. eta /. ((float (Array.length data.(0)))
 		*. (float (Array.length data))))), cost)
+
+(**
+	Résolution dans le cas où tous les paramètres peuvent flotter.
+	Les paramètres sont :
+		cm
+		ca
+		cl
+		rm
+		ra
+		rl
+		am
+		aa
+		al : float array array
+		im
+		sm : float array
+*)
+
+let calc_grad_single3 data (cm,ca,cl,rm,ra,rl,am,aa,al,im,sm) i =
+	let boids = data.(i) in
+	let n = Array.length boids in
+	let d2 = init_matrix n n (fun i j ->
+		norm2 (boids.(i).pos -- boids.(j).pos)) in
+	let d = init_matrix n n (fun i j -> sqrt d2.(i).(j)) in
+	
+	let v = Array.make n zero in
+	
+	let gcm = Array.make_matrix n n zero in
+	let gca = Array.make_matrix n n zero in
+	let gcl = Array.make_matrix n n zero in
+	for i = 0 to n - 1 do
+		for j = 0 to n - 1 do
+			let s,da,dl = useful_sigmoid ca.(i).(j) cl.(i).(j) d.(i).(j) in
+			let vec =
+				if d.(i).(j) = 0. then zero
+				else (boids.(j).pos -- boids.(i).pos) // d.(i).(j) in
+			gcm.(i).(j) <- vec ** s;
+			gca.(i).(j) <- vec ** (da *. cm.(i).(j));
+			gcl.(i).(j) <- vec ** (dl *. cm.(i).(j));
+			v.(i) <- gcm.(i).(j) ** cm.(i).(j)
+		done
+	done;
+	
+	let grm = Array.make_matrix n n zero in
+	let gra = Array.make_matrix n n zero in
+	let grl = Array.make_matrix n n zero in
+	for i = 0 to n - 1 do
+		for j = 0 to n - 1 do
+			let s,da,dl = useful_sigmoid ra.(i).(j) rl.(i).(j) d.(i).(j) in
+			let vec =
+				if d.(i).(j) = 0. then zero
+				else (boids.(i).pos -- boids.(j).pos) // d2.(i).(j) in
+			grm.(i).(j) <- vec ** s;
+			gra.(i).(j) <- vec ** (da *. rm.(i).(j));
+			grl.(i).(j) <- vec ** (dl *. rm.(i).(j));
+			v.(i) <- v.(i) ++ (grm.(i).(j) ** rm.(i).(j))
+		done
+	done;
+	
+	let gam = Array.make_matrix n n zero in
+	let gaa = Array.make_matrix n n zero in
+	let gal = Array.make_matrix n n zero in
+	for i = 0 to n - 1 do
+		for j = 0 to n - 1 do
+			let s,da,dl = useful_sigmoid ra.(i).(j) rl.(i).(j) d.(i).(j) in
+			let vec = boids.(j).v -- boids.(i).v in
+			gam.(i).(j) <- vec ** s;
+			gaa.(i).(j) <- vec ** (da *. am.(i).(j));
+			gal.(i).(j) <- vec ** (dl *. am.(i).(j));
+			v.(i) <- v.(i) ++ (gam.(i).(j) ** ra.(i).(j))
+		done
+	done;
+	
+	let gim = Array.make n zero in
+	for i = 0 to n - 1 do
+		gim.(i) <- boids.(i).v;
+		v.(i) <- v.(i) ++ (gim.(i) ** im.(i))
+	done;
+	
+	let gsm = Array.make n zero in
+	for i = 0 to n - 1 do
+		gsm.(i) <- stay_v boids.(i).pos;
+		v.(i) <- v.(i) ++ (gsm.(i) ** sm.(i))
+	done;
+	
+	let c = ref 0. in	
+	let dv = Array.init n (fun j -> v.(j) -- boids.(i+1).v) in
+	
+	for i = 0 to n - 1 do
+		c := !c +. (norm2 dv.(i))
+	done;
+	
+	let aux vec i = 2. *. (scalar vec dv.(i)) in
+	let aux2 m = init_matrix n n (fun i j ->
+		aux m.(i).(j) i) in
+	let aux3 t = Array.init n (fun i -> aux t.(i) i) in
+	let gcm = aux2 gcm in
+	let gca = aux2 gca in
+	let gcl = aux2 gcl in
+	let gam = aux2 gam in
+	let gaa = aux2 gaa in
+	let gal = aux2 gal in
+	let grm = aux2 grm in
+	let gra = aux2 gra in
+	let grl = aux2 grl in
+	let gim = aux3 gim in
+	let gsm = aux3 gsm in
+	
+	((gcm,gca,gcl,grm,gra,grl,gam,gaa,gal,gim,gsm),!c)
+
+let sum_m m1 m2 =
+	for i = 0 to Array.length m1 - 1 do
+		for j = 0 to Array.length m1.(0) - 1 do
+			m1.(i).(j) <- m1.(i).(j) +. m2.(i).(j)
+		done
+	done
+
+let sum_v v1 v2 =
+	for i = 0 to Array.length v1 - 1 do
+		v1.(i) <- v1.(i) +. v2.(i)
+	done
+	
+let mul_m c m1 =
+	for i = 0 to Array.length m1 - 1 do
+		for j = 0 to Array.length m1.(0) - 1 do
+			m1.(i).(j) <- c *. m1.(i).(j)
+		done
+	done
+
+let mul_v c v1 =
+	for i = 0 to Array.length v1 - 1 do
+		v1.(i) <- v1.(i) *. c
+	done
+
+let calc_grad3 n data param =
+	let t = Array.init n (fun i -> Random.int (Array.length data - 1)) in
+	let nb = Array.length data.(0) in
+	
+	let gcm2 = Array.make_matrix nb nb 0. in
+	let gca2 = Array.make_matrix nb nb 0. in
+	let gcl2 = Array.make_matrix nb nb 0. in
+	let gam2 = Array.make_matrix nb nb 0. in
+	let gaa2 = Array.make_matrix nb nb 0. in
+	let gal2 = Array.make_matrix nb nb 0. in
+	let grm2 = Array.make_matrix nb nb 0. in
+	let gra2 = Array.make_matrix nb nb 0. in
+	let grl2 = Array.make_matrix nb nb 0. in
+	let gim2 = Array.make nb 0. in
+	let gsm2 = Array.make nb 0. in
+	let c2 = ref 0. in
+	
+	let rec loop j =
+		if j >= 0 then (
+			let (gcm,gca,gcl,grm,gra,grl,gam,gaa,gal,gim,gsm),c =
+				calc_grad_single3 data param t.(j) in
+			List.iter2 sum_m [gcm2;gca2;gcl2;grm2;gra2;grl2;gam2;gaa2;gal2]
+				[gcm;gca;gcl;grm;gra;grl;gam;gaa;gal];
+			List.iter2 sum_v [gim2;gsm2] [gim;gsm];
+			c2 := !c2 +. c;
+			loop (j-1)
+		) in
+	loop (n-1);
+	
+	let nf = 1. /. (float n) in
+	List.iter (mul_m nf) [gcm2;gca2;gcl2;grm2;gra2;grl2;gam2;gaa2;gal2];
+	List.iter (mul_v nf) [gim2;gsm2];
+	
+	((gcm2,gca2,gcl2,grm2,gra2,grl2,gam2,gaa2,gal2,gim2,gsm2),!c2)
+	
+let apply_grad3 eta n data (cm,ca,cl,rm,ra,rl,am,aa,al,im,sm) =
+	let ((gcm,gca,gcl,grm,gra,grl,gam,gaa,gal,gim,gsm),c) =
+		calc_grad3 n data (cm,ca,cl,rm,ra,rl,am,aa,al,im,sm) in
+	let c = (-1.) *. eta /. (float (Array.length data - 1)
+		*. float (Array.length data.(0))) in
+	List.iter (mul_m c) [gcm;gca;gcl;grm;gra;grl;gam;gaa;gal];
+	List.iter (mul_v c) [gim;gsm];
+	List.iter2 sum_m [cm;ca;cl;rm;ra;rl;am;aa;al]
+		[gcm;gca;gcl;grm;gra;grl;gam;gaa;gal];
+	List.iter2 sum_v [im;sm] [gim;gsm];
+	c
 
 let read_data name =
 	let ic = open_in_bin name in
