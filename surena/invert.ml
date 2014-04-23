@@ -48,6 +48,85 @@ let random_float a b = Random.float (b -. a) +. a
 
 let init_matrix n m f = Array.init n (fun i-> Array.init m (f i))
 
+let sum_m m1 m2 =
+	for i = 0 to Array.length m1 - 1 do
+		for j = 0 to Array.length m1.(0) - 1 do
+			m1.(i).(j) <- m1.(i).(j) +. m2.(i).(j)
+		done
+	done
+
+let sum_v v1 v2 =
+	for i = 0 to Array.length v1 - 1 do
+		v1.(i) <- v1.(i) +. v2.(i)
+	done
+	
+let mul_m c m1 =
+	for i = 0 to Array.length m1 - 1 do
+		for j = 0 to Array.length m1.(0) - 1 do
+			m1.(i).(j) <- c *. m1.(i).(j)
+		done
+	done
+
+let mul_v c v1 =
+	for i = 0 to Array.length v1 - 1 do
+		v1.(i) <- v1.(i) *. c
+	done
+
+let prod m1 m2 =
+	init_matrix (Array.length m1) (Array.length m2.(0)) (fun i j ->
+		let res = ref 0. in
+		for k = 0 to  Array.length m2 - 1 do
+			res := !res +. m1.(i).(k) *. m2.(k).(j)
+		done;
+		!res
+	)
+	
+	
+let print_mat m =
+	let n = Array.length m in
+	let p = Array.length m.(0) in
+	for i = 0 to n-1 do
+		Printf.printf "| ";
+		for j = 0 to p -1 do
+			Printf.printf "%f" m.(i).(j);
+			Printf.printf " "
+		done;
+		Printf.printf "|\n"
+	done
+	
+let inv_m m =
+	let n = Array.length m in
+	let m = init_matrix n (2*n) (fun i j ->
+		if j < n then m.(i).(j)
+		else if j = i + n then 1.
+		else 0.) in
+	let rec loop p =
+		if p < n then (
+			let k = ref p in
+			while !k < n && m.(!k).(p) = 0. do incr k done;
+			if !k = n then assert false;
+			let tmp = m.(!k).(p) in
+			for i = 0 to 2 * n - 1 do
+				m.(!k).(i) <- m.(!k).(i) /. tmp
+			done;
+			for i = 0 to 2 * n - 1 do
+				let tmp = m.(!k).(i) in
+				m.(!k).(i) <- m.(p).(i);
+				m.(p).(i) <- tmp
+			done;
+			for i = 0 to n - 1 do
+				if i <> p then
+					let tmp = m.(i).(p) in
+					for j = 0 to 2 * n - 1 do
+						m.(i).(j) <- m.(i).(j) -. tmp *. m.(p).(j)
+					done
+			done;
+			loop (p+1)
+		) in
+	loop 0;
+	init_matrix n n (fun i j -> m.(i).(j+n))
+
+
 (**
 	Résolution dans le cas où les paramètres sont uniformes.
 	On suppose alpha et les longueurs constants.
@@ -184,7 +263,7 @@ let pre_calc2 data = Array.init (Array.length data - 1) (fun i ->
 			** (sigmoid alpha lrp (d boids.(0).pos boids.(j+1).pos)) in
 			
 		sum_c, sum_r, sum_a, vr))
-
+(*
 let calc_grad_single2 data pre_calc t i =
 	let cm,rm,am,im,sm = get_coeff5 t in
 	let boids = data.(i) in
@@ -212,6 +291,34 @@ let apply_grad2 k eta n data pre_calc param =
 	let grad,cost = calc_grad2 k n data pre_calc param in
 	(param +++ (grad *** (-. eta /. ((float (Array.length data.(0)))
 		*. (float (Array.length data))))), cost)
+*)
+
+let matrix data =
+	let pre_calc = pre_calc2 data in
+	let q = Array.make_matrix 5 5 0. in
+	let a = Array.make 5 0. in
+	let c = ref 0. in
+	for i = 0 to Array.length pre_calc - 1 do
+		for j = 0 to Array.length pre_calc.(0) - 1 do
+			let sum_c, sum_r, sum_a, vr = pre_calc.(i).(j) in
+			let sv = stay_v data.(i).(j+1).pos in
+			let dv = vr ** rmi0 -- data.(i+1).(j+1).v in
+			let tmp = [|sum_c; sum_r; sum_a; data.(i).(j+1).v; sv|] in
+			let tmp2 = init_matrix 5 5 (fun k l -> scalar tmp.(k) tmp.(l)) in
+			sum_m q tmp2;
+			let tmp2 = Array.init 5 (fun k -> 2. *. (scalar tmp.(k) dv)) in
+			sum_v a tmp2;
+			c := !c +. (norm2 dv)
+		done
+	done;
+	q,a,!c
+
+let res data =
+	let q,a,c = matrix data in
+	let a_m = Array.init (Array.length a) (fun i -> [|(-0.5) *. a.(i)|]) in
+	let iq = inv_m q in
+	let s = prod iq a_m in
+	Array.init (Array.length s) (fun i -> s.(i).(0))
 
 (**
 	Résolution dans le cas où tous les paramètres peuvent flotter.
@@ -321,30 +428,6 @@ let calc_grad_single3 data (cm,ca,cl,rm,ra,rl,am,aa,al,im,sm) i =
 	
 	((gcm,gca,gcl,grm,gra,grl,gam,gaa,gal,gim,gsm),!c)
 
-let sum_m m1 m2 =
-	for i = 0 to Array.length m1 - 1 do
-		for j = 0 to Array.length m1.(0) - 1 do
-			m1.(i).(j) <- m1.(i).(j) +. m2.(i).(j)
-		done
-	done
-
-let sum_v v1 v2 =
-	for i = 0 to Array.length v1 - 1 do
-		v1.(i) <- v1.(i) +. v2.(i)
-	done
-	
-let mul_m c m1 =
-	for i = 0 to Array.length m1 - 1 do
-		for j = 0 to Array.length m1.(0) - 1 do
-			m1.(i).(j) <- c *. m1.(i).(j)
-		done
-	done
-
-let mul_v c v1 =
-	for i = 0 to Array.length v1 - 1 do
-		v1.(i) <- v1.(i) *. c
-	done
-
 let calc_grad3 n data param =
 	let t = Array.init n (fun i -> Random.int (Array.length data - 1)) in
 	let nb = Array.length data.(0) in
@@ -412,14 +495,15 @@ let interact = ref false
 
 let main () =
 	let data = read_data !name in
-	let pre_calc = pre_calc2 data in
-	let init_param = [|1.;1.;1.;1.;1.|] in
+	let s = res data in
+(*	let pre_calc = pre_calc2 data in
+	let init_param = [|1.;1.;1.;1.;1.|] in *)
 (*	let init_param = [|0.001;10.;0.01;1.;0.25|] in *)
 	let print t =
 		let (cb,rb,ab,ib,sb) = get_coeff5 t in
 		Printf.printf "cm = %f\nrm = %f\nam = %f\nim = %f\nsm = %f\n"
 			cb rb ab ib sb in
-	let rec loop param = function
+(*	let rec loop param = function
 		| 0 -> param
 		| n ->
 			let param,cost = apply_grad2 5
@@ -433,8 +517,8 @@ let main () =
 				Scanf.scanf "%s\n" (fun s -> ())
 			);
 			loop param (n-1) in
-	let param = loop init_param !nb_gens in
-	print param
+	let param = loop init_param !nb_gens in *)
+	print s
 
 
 let () = Arg.parse
