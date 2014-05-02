@@ -1,11 +1,11 @@
 
 BIN1=display
 SOURCES1=engine.ml display.ml
-FLAGS1=-libs graphics,unix
+FLAGS1=-libs graphics,unix -tags thread
 
 BIN2=invert
 SOURCES2=engine.ml invert.ml
-FLAGS2=-libs graphics,unix
+FLAGS2=-libs graphics,unix -tags thread
 
 NO_COLOR=\033[0m
 OK_COLOR=\033[32;01m

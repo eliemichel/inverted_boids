@@ -7,8 +7,8 @@
 type boid = {
 	mutable pos   : float * float;
 	mutable v     : float * float;
-	alive : bool; (* true = agent ; false = Décors *)
-	color : Graphics.color
+	mutable alive : bool; (* true = agent ; false = Décors *)
+	mutable color : int
 }
 
 type rule_param = (float array array * float array array * float array array)

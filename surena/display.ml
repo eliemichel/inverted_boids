@@ -136,6 +136,11 @@ let () =
 	done
 
 
+let stringtail str i =
+	String.sub str i ((String.length str) - i)
+
+
+
 let simu () =
 	let oc =
 		if !dump_file = "" then stdout
@@ -204,15 +209,65 @@ let cli () =
 						print_endline ""
 				)
 				with Scan_failure _ ->
+				try sscanf cmd "update boid %i set%n" (fun i newcur ->
+					let cur = ref newcur in
+					if i < 0 || i >= n
+					then print_endline "error: boid index out of bounds"
+					else
+					let boid = boids.(i) in
+					try
+						while true do
+							try sscanf (stringtail cmd !cur) " position = (%f,%f)%n" (fun x y newcur ->
+								cur := !cur + newcur;
+								boid.pos <- x, y;
+								printf "Position of boid %i set to (%f,%f)\n" i x y
+							)
+							with Scan_failure _ ->
+							try sscanf (stringtail cmd !cur) " velocity = (%f,%f)%n" (fun x y newcur ->
+								cur := !cur + newcur;
+								boid.v <- x, y;
+								printf "Velocity of boid %i set to (%f,%f)\n" i x y
+							)
+							with Scan_failure _ ->
+							try sscanf (stringtail cmd !cur) " alive = %s%n" (fun str newcur ->
+								cur := !cur + newcur;
+								let str = String.lowercase str in
+								if str = "yes" || str = "true"
+								then (
+									boid.alive <- true;
+									printf "Boid %i set to alive\n" i
+								)
+								else if str = "no" || str = "false"
+								then (
+									boid.alive <- false;
+									printf "Boid %i set to dead\n" i
+								)
+								else
+									printf "error: `%s` is not a valid option\n" str
+								
+							)
+							with Scan_failure _ ->
+							try sscanf (stringtail cmd !cur) " color = (%i,%i,%i)%n" (fun r g b newcur ->
+								cur := !cur + newcur;
+								let c = rgb r g b in
+								boid.color <- c;
+								printf "Color of boid %i set to #%6x\n" i c
+							)
+							with Scan_failure _ ->
+								print_endline "error: property not found";
+								raise End_of_file
+						done
+					with End_of_file -> ()
+				)
+				with Scan_failure _ ->
 					print_endline "error: command not found"
 			with End_of_file -> ()
 		done
 	with Quit -> ()
 
 let main () =
-	match Unix.fork () with
-		| 0 -> simu ()
-		| pid -> cli (); ignore (Unix.kill pid Sys.sigint)
+	ignore (Thread.create simu ());
+	cli ()
 
 
 let () = Arg.parse
