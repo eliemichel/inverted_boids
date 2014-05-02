@@ -1,0 +1,2 @@
+#!/usr/bin/sh
+rlwrap $(dirname $0)/display "$@"
