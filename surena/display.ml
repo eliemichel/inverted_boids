@@ -13,10 +13,22 @@ let dump_file = ref ""
 
 let _ = Random.init (int_of_float (100. *. Unix.time ()))
 
+let viewport_x = ref 0.
+let viewport_y = ref 0.
+let viewport_w = float_of_int Engine.capxi
+let viewport_h = float_of_int Engine.capyi
+let viewport_scale = ref 1.
+
+
+
+
 let draw_boid boid =
 	let x,y = boid.pos in
 		set_color boid.color;
-		fill_circle (truncate x) (truncate y) 3
+		fill_circle
+			(truncate ((x -. !viewport_x) *. !viewport_scale +. viewport_w /. 2.))
+			(truncate ((y -. !viewport_y) *. !viewport_scale +. viewport_h /. 2.))
+			3
 
 let n = 200
 
@@ -189,7 +201,17 @@ let cli () =
 					print_endline "Available commands are :";
 					print_endline " - help: display that list";
 					print_endline " - quit: close Surena";
-					print_endline " - print boid \027[01mn\027[0m: display information about the \027[01mn\027[0mth boid"
+					print_endline " - print boid \027[01mn\027[0m: display information about the \027[01mn\027[0mth boid";
+					print_endline " - update boid \027[01mn\027[0m set ";
+					print_endline "     [position=(\027[01mx\027[0m,\027[01my\027[0m)]";
+					print_endline "     [velocity=(\027[01mvx\027[0m,\027[01mvy\027[0m)]";
+					print_endline "     [alive=yes|true|no|false]";
+					print_endline "     [color=(\027[01mr\027[0m,\027[01mg\027[0m,\027[01mb\027[0m)]";
+					print_endline "    Edit boid info";
+					print_endline " - update viewport set";
+					print_endline "     [position=(\027[01mx\027[0m,\027[01my\027[0m)]";
+					print_endline "     [scale=\027[01ms\027[0m)]";
+					print_endline "    Edit viewport info"
 				with Scan_failure _ ->
 				try sscanf cmd "quit" ();
 					raise Quit
@@ -252,6 +274,29 @@ let cli () =
 								let c = rgb r g b in
 								boid.color <- c;
 								printf "Color of boid %i set to #%6x\n" i c
+							)
+							with Scan_failure _ ->
+								print_endline "error: property not found";
+								raise End_of_file
+						done
+					with End_of_file -> ()
+				)
+				with Scan_failure _ ->
+				try sscanf cmd "update viewport set%n" (fun newcur ->
+					let cur = ref newcur in
+					try
+						while true do
+							try sscanf (stringtail cmd !cur) " position = (%f,%f)%n" (fun x y newcur ->
+								cur := !cur + newcur;
+								viewport_x := x;
+								viewport_y := y;
+								printf "Viewport position set to (%f,%f)\n" x y
+							)
+							with Scan_failure _ ->
+							try sscanf (stringtail cmd !cur) " scale = %f%n" (fun scale newcur ->
+								cur := !cur + newcur;
+								viewport_scale := scale;
+								printf "Viewport scale set to %f\n" scale
 							)
 							with Scan_failure _ ->
 								print_endline "error: property not found";
