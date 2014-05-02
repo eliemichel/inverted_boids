@@ -495,30 +495,60 @@ let interact = ref false
 
 let main () =
 	let data = read_data !name in
-	let s = res data in
+(*	let s = res data in *)
 (*	let pre_calc = pre_calc2 data in
 	let init_param = [|1.;1.;1.;1.;1.|] in *)
 (*	let init_param = [|0.001;10.;0.01;1.;0.25|] in *)
-	let print t =
+	let param =
+		let n = Array.length data.(0) in
+		let a = Array.make_matrix n n in
+		let b = Array.make n in
+		a 1.,
+		a 1.,
+		a 1.,
+		a 1.,
+		a 1.,
+		a 1.,
+		a 1.,
+		a 1.,
+		a 1.,
+		b 1.,
+		b 1. in
+(*	let print t =
 		let (cb,rb,ab,ib,sb) = get_coeff5 t in
 		Printf.printf "cm = %f\nrm = %f\nam = %f\nim = %f\nsm = %f\n"
-			cb rb ab ib sb in
-(*	let rec loop param = function
-		| 0 -> param
+			cb rb ab ib sb in *)
+	let print (cm,ca,cl,rm,ra,rl,am,aa,al,im,sm) =
+		let print_mat s m =			
+			Printf.printf "########\n#%-6s#\n########\n\n" s;
+			Array.iter (fun r -> Array.iter (fun c ->
+				Printf.printf "%10.6g" c) r;
+				Printf.printf "\n") m;
+			Printf.printf "\n\n" in
+		let print_vect s v =
+			Printf.printf "########\n#%-6s#\n########\n\n" s;
+			Array.iter (fun c ->
+				Printf.printf "%10.6g" c) v;
+			Printf.printf "\n\n\n" in
+		List.iter2 print_mat ["cm";"ca";"cl";"rm";"ra";"rl";"am";"aa";"al"]
+			[cm;ca;cl;rm;ra;rl;am;aa;al];
+		List.iter2 print_vect ["im";"sm"] [im;sm] in
+	let rec loop = function
+		| 0 -> ()
 		| n ->
-			let param,cost = apply_grad2 5
+			let cost = apply_grad3
 				(!eta /. sqrt (float (!nb_gens - n + 1)))
-				!nb_grads data pre_calc param in
+				!nb_grads data param in
 			if !interact then (
-				Printf.printf "====================\n";
-				Printf.printf "n = %d\n" (!nb_gens - n);
+				Printf.eprintf "====================\n";
+				Printf.eprintf "n = %d\n" (!nb_gens - n);
 				print param;
-				Printf.printf "c = %f\n%!" cost;
+				Printf.eprintf "c = %f\n%!" cost;
 				Scanf.scanf "%s\n" (fun s -> ())
 			);
-			loop param (n-1) in
-	let param = loop init_param !nb_gens in *)
-	print s
+			loop (n-1) in
+	loop !nb_gens;
+	print param
 
 
 let () = Arg.parse
