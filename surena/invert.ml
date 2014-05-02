@@ -42,7 +42,8 @@ let useful_sigmoid alpha lambda x =
 	let e = exp (alpha *. d) in
 	let e1 = 1. +. e in
 	let f = e /. (e1 *. e1) in
-	((1. /. e1), (-. d *. f), (alpha *. f))
+	let aux x = if x = nan then 0. else x in
+	((1. /. e1), aux (-. d *. f), aux (alpha *. f))
 
 let random_float a b = Random.float (b -. a) +. a
 
@@ -197,6 +198,7 @@ let pre_calc data = Array.init (Array.length data - 1) (fun i ->
 			
 		sum_c, sum_r, sum_a))
     
+(*
 
 let calc_grad_single data pre_calc t i =
 	let cm,rm,am,im,sm = get_coeff5 t in
@@ -224,6 +226,8 @@ let apply_grad k eta n data pre_calc param =
 	let grad,cost = calc_grad k n data pre_calc param in
 	(param +++ (grad *** (-. eta /. ((float (Array.length data.(0)))
 		*. (float (Array.length data))))), cost)
+
+*)
 
 (**
 	Résolution dans le cas où les paramètres sont uniformes,
@@ -357,7 +361,7 @@ let calc_grad_single3 data (cm,ca,cl,rm,ra,rl,am,aa,al,im,sm) i =
 			gcm.(i).(j) <- vec ** s;
 			gca.(i).(j) <- vec ** (da *. cm.(i).(j));
 			gcl.(i).(j) <- vec ** (dl *. cm.(i).(j));
-			v.(i) <- gcm.(i).(j) ** cm.(i).(j)
+			v.(i) <- v.(i) ++ (gcm.(i).(j) ** cm.(i).(j))
 		done
 	done;
 	
@@ -368,7 +372,7 @@ let calc_grad_single3 data (cm,ca,cl,rm,ra,rl,am,aa,al,im,sm) i =
 		for j = 0 to n - 1 do
 			let s,da,dl = useful_sigmoid ra.(i).(j) rl.(i).(j) d.(i).(j) in
 			let vec =
-				if d.(i).(j) = 0. then zero
+				if d2.(i).(j) = 0. then zero
 				else (boids.(i).pos -- boids.(j).pos) // d2.(i).(j) in
 			grm.(i).(j) <- vec ** s;
 			gra.(i).(j) <- vec ** (da *. rm.(i).(j));
@@ -382,12 +386,12 @@ let calc_grad_single3 data (cm,ca,cl,rm,ra,rl,am,aa,al,im,sm) i =
 	let gal = Array.make_matrix n n zero in
 	for i = 0 to n - 1 do
 		for j = 0 to n - 1 do
-			let s,da,dl = useful_sigmoid ra.(i).(j) rl.(i).(j) d.(i).(j) in
+			let s,da,dl = useful_sigmoid aa.(i).(j) al.(i).(j) d.(i).(j) in
 			let vec = boids.(j).v -- boids.(i).v in
 			gam.(i).(j) <- vec ** s;
 			gaa.(i).(j) <- vec ** (da *. am.(i).(j));
 			gal.(i).(j) <- vec ** (dl *. am.(i).(j));
-			v.(i) <- v.(i) ++ (gam.(i).(j) ** ra.(i).(j))
+			v.(i) <- v.(i) ++ (gam.(i).(j) ** aa.(i).(j))
 		done
 	done;
 	
@@ -403,8 +407,8 @@ let calc_grad_single3 data (cm,ca,cl,rm,ra,rl,am,aa,al,im,sm) i =
 		v.(i) <- v.(i) ++ (gsm.(i) ** sm.(i))
 	done;
 	
-	let c = ref 0. in	
-	let dv = Array.init n (fun j -> v.(j) -- boids.(i+1).v) in
+	let c = ref 0. in
+	let dv = Array.init n (fun j -> v.(j) -- data.(i+1).(j).v) in
 	
 	for i = 0 to n - 1 do
 		c := !c +. (norm2 dv.(i))
@@ -464,7 +468,7 @@ let calc_grad3 n data param =
 	((gcm2,gca2,gcl2,grm2,gra2,grl2,gam2,gaa2,gal2,gim2,gsm2),!c2)
 	
 let apply_grad3 eta n data (cm,ca,cl,rm,ra,rl,am,aa,al,im,sm) =
-	let ((gcm,gca,gcl,grm,gra,grl,gam,gaa,gal,gim,gsm),c) =
+	let ((gcm,gca,gcl,grm,gra,grl,gam,gaa,gal,gim,gsm),cost) =
 		calc_grad3 n data (cm,ca,cl,rm,ra,rl,am,aa,al,im,sm) in
 	let c = (-1.) *. eta /. (float (Array.length data - 1)
 		*. float (Array.length data.(0))) in
@@ -473,7 +477,7 @@ let apply_grad3 eta n data (cm,ca,cl,rm,ra,rl,am,aa,al,im,sm) =
 	List.iter2 sum_m [cm;ca;cl;rm;ra;rl;am;aa;al]
 		[gcm;gca;gcl;grm;gra;grl;gam;gaa;gal];
 	List.iter2 sum_v [im;sm] [gim;gsm];
-	c
+	cost
 
 let read_data name =
 	let ic = open_in_bin name in
@@ -503,32 +507,32 @@ let main () =
 		let n = Array.length data.(0) in
 		let a = Array.make_matrix n n in
 		let b = Array.make n in
-		a 1.,
-		a 1.,
-		a 1.,
-		a 1.,
-		a 1.,
-		a 1.,
-		a 1.,
-		a 1.,
-		a 1.,
+		a 0.001,
+		a 0.5,
+		a 100.,
+		a 10.,
+		a 0.5,
+		a 20.,
+		a 0.01,
+		a 0.5,
+		a 100.,
 		b 1.,
-		b 1. in
+		b 0.25 in
 (*	let print t =
 		let (cb,rb,ab,ib,sb) = get_coeff5 t in
 		Printf.printf "cm = %f\nrm = %f\nam = %f\nim = %f\nsm = %f\n"
 			cb rb ab ib sb in *)
 	let print (cm,ca,cl,rm,ra,rl,am,aa,al,im,sm) =
 		let print_mat s m =			
-			Printf.printf "########\n#%-6s#\n########\n\n" s;
+			Printf.printf "########\n# %-5s#\n########\n\n" s;
 			Array.iter (fun r -> Array.iter (fun c ->
-				Printf.printf "%10.6g" c) r;
+				Printf.printf "%12.3e" c) r;
 				Printf.printf "\n") m;
 			Printf.printf "\n\n" in
 		let print_vect s v =
-			Printf.printf "########\n#%-6s#\n########\n\n" s;
+			Printf.printf "########\n# %-5s#\n########\n\n" s;
 			Array.iter (fun c ->
-				Printf.printf "%10.6g" c) v;
+				Printf.printf "%12.3e" c) v;
 			Printf.printf "\n\n\n" in
 		List.iter2 print_mat ["cm";"ca";"cl";"rm";"ra";"rl";"am";"aa";"al"]
 			[cm;ca;cl;rm;ra;rl;am;aa;al];
