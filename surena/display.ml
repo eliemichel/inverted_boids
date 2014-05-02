@@ -4,6 +4,9 @@
 *)
 
 open Graphics
+open Scanf
+open Printf
+
 open Engine
 
 let dump_file = ref ""
@@ -132,7 +135,8 @@ let () =
 		boids.(k) <- { boids.(k) with color = Graphics.blue }
 	done
 
-let main () =
+
+let simu () =
 	let oc =
 		if !dump_file = "" then stdout
 		else open_out_bin !dump_file in
@@ -163,6 +167,52 @@ let main () =
 	else
 		close_out oc;
 	exit(0)
+
+exception Quit
+let cli () =
+	print_endline "Surena, v0.0.1";
+	print_endline "type `help` for more information about that CLI";
+	print_endline "";
+	try
+		while true do
+			print_string "Surena ⋅> ";
+			try
+				let cmd = read_line () in
+				try sscanf cmd "help" ();
+					print_endline "Surena, v0.0.1";
+					print_endline "";
+					print_endline "Available commands are :";
+					print_endline " - help: display that list";
+					print_endline " - quit: close Surena";
+					print_endline " - print boid \027[01mn\027[0m: display information about the \027[01mn\027[0mth boid"
+				with Scan_failure _ ->
+				try sscanf cmd "quit" ();
+					raise Quit
+				with Scan_failure _ ->
+				try sscanf cmd "print boid %i" (fun i ->
+					if i < 0 || i >= n
+					then print_endline "error: boid index out of bounds"
+					else
+						let boid = boids.(i) in
+						let x, y = boid.pos in
+						let vx, vy = boid.v in
+						printf "Boid %i:\n" i;
+						printf " - position : (%f, %f)\n" x y;
+						printf " - velocity : (%f, %f)\n" vx vy;
+						printf " - alive : %s\n" (if boid.alive then "yes" else "no");
+						printf " - color : #%6x\n" boid.color;
+						print_endline ""
+				)
+				with Scan_failure _ ->
+					print_endline "error: command not found"
+			with End_of_file -> ()
+		done
+	with Quit -> ()
+
+let main () =
+	match Unix.fork () with
+		| 0 -> simu ()
+		| pid -> cli (); ignore (Unix.kill pid Sys.sigint)
 
 
 let () = Arg.parse
