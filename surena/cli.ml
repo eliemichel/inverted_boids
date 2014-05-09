@@ -30,8 +30,17 @@ let rec eval rules boids viewport_x viewport_y viewport_scale cmd =
 		print_endline "    Edit boid info";
 		print_endline " - update viewport set";
 		print_endline "     [position=(\027[01mx\027[0m,\027[01my\027[0m)]";
-		print_endline "     [scale=\027[01ms\027[0m)]";
+		print_endline "     [scale=\027[01ms\027[0m]";
 		print_endline "    Edit viewport info";
+		print_endline " - update rule \027[01mi\027[0m -> \027[01mj\027[0m set";
+		print_endline "     [cohesion=\027[01mc\027[0m]";
+		print_endline "     [repulsion=\027[01mc\027[0m]";
+		print_endline "     [alignment=\027[01mc\027[0m]";
+		print_endline "    Edit rules matrices";
+		print_endline " - update rule \027[01mi\027[0m set";
+		print_endline "     [inertia=\027[01mc\027[0m]";
+		print_endline "     [stay=\027[01mc\027[0m]";
+		print_endline "    Edit rules vectors";
 		print_endline " - source \027[01mfilename\027[0m: execute \027[01mfilename\027[0m content as standard CLI input"
 	with Scan_failure _ ->
 	try sscanf cmd "quit" ();
@@ -134,27 +143,123 @@ let rec eval rules boids viewport_x viewport_y viewport_scale cmd =
 		if j < 0 || j >= n
 		then print_endline "error: second boid index out of bounds"
 		else
-		let boid1 = boids.(i) in
-		let boid2 = boids.(j) in
 		try
 			while true do
-(*
-Cohesion (cm,ca,cl);
-Repulsion (rm,ra,rl);
-Alignment (am,aa,al);
-Inertia im;
-Stay sm
-*)
+				let errmsg = "Rules order has been changed and so it broke the CLI !" in
 				try sscanf (stringtail cmd !cur) " cohesion = %f%n" (fun c newcur ->
 					cur := !cur + newcur;
 					(match rules with
 					| Cohesion (cm,_,_) :: _ -> cm.(i).(j) <- c
-					| _ -> failwith "Rules order has been changed and so it broke the CLI !"
+					| _ -> failwith errmsg
 					);
 					printf "Cohesion of boid %i toward boid %i set to %f\n" i j c
 				)
 				with Scan_failure _ ->
+				try sscanf (stringtail cmd !cur) " cohesion alpha = %f%n" (fun c newcur ->
+					cur := !cur + newcur;
+					(match rules with
+					| Cohesion (_,ca,_) :: _ -> ca.(i).(j) <- c
+					| _ -> failwith errmsg
+					);
+					printf "Cohesion alpha of boid %i toward boid %i set to %f\n" i j c
+				)
+				with Scan_failure _ ->
+				try sscanf (stringtail cmd !cur) " cohesion lambda = %f%n" (fun c newcur ->
+					cur := !cur + newcur;
+					(match rules with
+					| Cohesion (_,_,cl) :: _ -> cl.(i).(j) <- c
+					| _ -> failwith errmsg
+					);
+					printf "Cohesion lambda of boid %i toward boid %i set to %f\n" i j c
+				)
+				with Scan_failure _ ->
+				try sscanf (stringtail cmd !cur) " repulsion = %f%n" (fun c newcur ->
+					cur := !cur + newcur;
+					(match rules with
+					| _ :: Repulsion (rm,_,_) :: _ -> rm.(i).(j) <- c
+					| _ -> failwith errmsg
+					);
+					printf "Repulsion of boid %i from boid %i set to %f\n" i j c
+				)
+				with Scan_failure _ ->
+				try sscanf (stringtail cmd !cur) " repulsion alpha = %f%n" (fun c newcur ->
+					cur := !cur + newcur;
+					(match rules with
+					| _ :: Repulsion (_,ra,_) :: _ -> ra.(i).(j) <- c
+					| _ -> failwith errmsg
+					);
+					printf "Repulsion alpha of boid %i toward boid %i set to %f\n" i j c
+				)
+				with Scan_failure _ ->
+				try sscanf (stringtail cmd !cur) " repulsion lambda = %f%n" (fun c newcur ->
+					cur := !cur + newcur;
+					(match rules with
+					| _ :: Repulsion (_,_,al) :: _ -> al.(i).(j) <- c
+					| _ -> failwith errmsg
+					);
+					printf "Repulsion lambda of boid %i toward boid %i set to %f\n" i j c
+				)
+				with Scan_failure _ ->
+				try sscanf (stringtail cmd !cur) " alignment = %f%n" (fun c newcur ->
+					cur := !cur + newcur;
+					(match rules with
+					| _ :: _ :: Alignment (am,_,_) :: _ -> am.(i).(j) <- c
+					| _ -> failwith errmsg
+					);
+					printf "Alignment of boid %i like boid %i set to %f\n" i j c
+				)
+				with Scan_failure _ ->
+				try sscanf (stringtail cmd !cur) " alignment alpha = %f%n" (fun c newcur ->
+					cur := !cur + newcur;
+					(match rules with
+					| _ :: _ :: Alignment (_,aa,_) :: _ -> aa.(i).(j) <- c
+					| _ -> failwith errmsg
+					);
+					printf "Alignment alpha of boid %i like boid %i set to %f\n" i j c
+				)
+				with Scan_failure _ ->
+				try sscanf (stringtail cmd !cur) " alignment lambda = %f%n" (fun c newcur ->
+					cur := !cur + newcur;
+					(match rules with
+					| _ :: _ :: Alignment (_,_,al) :: _ -> al.(i).(j) <- c
+					| _ -> failwith errmsg
+					);
+					printf "Alignment lambda of boid %i like boid %i set to %f\n" i j c
+				)
+				with Scan_failure _ ->
 					print_endline "error: property not found";
+					raise End_of_file
+			done
+		with End_of_file -> ()
+	)
+	with Scan_failure _ ->
+	try sscanf cmd "update rule %i set%n" (fun i newcur ->
+		let cur = ref newcur in
+		if i < 0 || i >= n
+		then print_endline "error: first boid index out of bounds"
+		else
+		try
+			while true do
+				let errmsg = "Rules order has been changed and so it broke the CLI !" in
+				try sscanf (stringtail cmd !cur) " inertia = %f%n" (fun c newcur ->
+					cur := !cur + newcur;
+					(match rules with
+					| _ :: _ :: _ :: Inertia im :: _ -> im.(i) <- c
+					| _ -> failwith errmsg
+					);
+					printf "Inertia of boid %i set to %f\n" i c
+				)
+				with Scan_failure _ ->
+				try sscanf (stringtail cmd !cur) " stay = %f%n" (fun c newcur ->
+					cur := !cur + newcur;
+					(match rules with
+					| _ :: _ :: _ :: _ :: Stay sm :: _ -> sm.(i) <- c
+					| _ -> failwith errmsg
+					);
+					printf "Stay rule of boid %i set to %f\n" i c
+				)
+				with Scan_failure _ ->
+				print_endline "error: property not found";
 					raise End_of_file
 			done
 		with End_of_file -> ()
