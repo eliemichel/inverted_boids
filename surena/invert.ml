@@ -560,8 +560,8 @@ let main () =
 				Printf.eprintf "====================\n";
 				Printf.eprintf "n = %d\n" (!nb_gens - n);
 				Printf.eprintf "c = %f\n%!" cost;
-			if !interact then (
 				print param;
+			if !interact then (
 				Scanf.scanf "%s\n" (fun s -> ())
 			);
 			loop (n-1) in
