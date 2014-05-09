@@ -126,7 +126,6 @@ let step_rule_single boids (rule) i =
 		sum (Array.length boids) (fun j ->
 			let c = coef boids param i j in
 			  (normalize (boids.(j).pos -- boids.(i).pos)) ** c
-			  	
 		)
 	| Alignment param ->
 		sum (Array.length boids) (fun j ->
