@@ -509,6 +509,8 @@ let eta = ref 1.
 
 let name = ref ""
 
+let output = ref ""
+
 let interact = ref false
 
 let main () =
@@ -536,18 +538,18 @@ let main () =
 		let (cb,rb,ab,ib,sb) = get_coeff5 t in
 		Printf.printf "cm = %f\nrm = %f\nam = %f\nim = %f\nsm = %f\n"
 			cb rb ab ib sb in *)
-	let print (cm,ca,cl,rm,ra,rl,am,aa,al,im,sm) =
+	let print oc (cm,ca,cl,rm,ra,rl,am,aa,al,im,sm) =
 		let print_mat s m =			
-			Printf.printf "########\n# %-5s#\n########\n\n" s;
+			Printf.fprintf oc "########\n# %-5s#\n########\n\n" s;
 			Array.iter (fun r -> Array.iter (fun c ->
-				Printf.printf "%12.3e" c) r;
-				Printf.printf "\n") m;
-			Printf.printf "\n\n" in
+				Printf.fprintf oc "%12.3e" c) r;
+				Printf.fprintf oc "\n") m;
+			Printf.fprintf oc "\n\n" in
 		let print_vect s v =
-			Printf.printf "########\n# %-5s#\n########\n\n" s;
+			Printf.fprintf oc "########\n# %-5s#\n########\n\n" s;
 			Array.iter (fun c ->
-				Printf.printf "%12.3e" c) v;
-			Printf.printf "\n\n\n" in
+				Printf.fprintf oc "%12.3e" c) v;
+			Printf.fprintf oc "\n\n\n" in
 		List.iter2 print_mat ["cm";"ca";"cl";"rm";"ra";"rl";"am";"aa";"al"]
 			[cm;ca;cl;rm;ra;rl;am;aa;al];
 		List.iter2 print_vect ["im";"sm"] [im;sm] in
@@ -557,16 +559,26 @@ let main () =
 			let cost = apply_grad3
 				(!eta /. sqrt (float (!nb_gens - n + 1)))
 				!nb_grads data param in
-				Printf.eprintf "====================\n";
-				Printf.eprintf "n = %d\n" (!nb_gens - n);
-				Printf.eprintf "c = %f\n%!" cost;
-				print param;
+			Printf.printf "====================\n";
+			Printf.printf "n = %d\n" (!nb_gens - n);
+			Printf.printf "c = %f\n%!" cost;
+			let oc =
+				if !output = "" then stdout
+				else open_out !output in
+			print oc param;
+			if !output <> "" then
+				close_out oc;
 			if !interact then (
 				Scanf.scanf "%s\n" (fun s -> ())
 			);
 			loop (n-1) in
 	loop !nb_gens;
-	print param
+	let oc =
+		if !output = "" then stdout
+		else open_out !output in
+	print oc param;
+	if !output <> "" then
+		close_out oc
 
 
 let () = Arg.parse
@@ -577,7 +589,9 @@ let () = Arg.parse
 	"-l", Arg.Set_float eta,
 		"learning rate";
 	"-i", Arg.Set interact,
-		"interactive mode"]
+		"interactive mode";
+	"-o", Arg.Set_string output,
+		"output file"]
 	(fun s -> name := s)
 	"Usage : invert data.\n\
 	Tries to recover the parameters given to a simulation from the position\n\
