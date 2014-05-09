@@ -557,7 +557,7 @@ let main () =
 		| 0 -> ()
 		| n ->
 			let cost = apply_grad3
-				(!eta /. sqrt (float (!nb_gens - n + 1)))
+				(!eta /. (float (!nb_gens - n + 1)))
 				!nb_grads data param in
 			Printf.printf "====================\n";
 			Printf.printf "n = %d\n" (!nb_gens - n);
