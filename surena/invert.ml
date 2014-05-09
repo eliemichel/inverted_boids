@@ -42,7 +42,7 @@ let useful_sigmoid alpha lambda x =
 	let e = exp (alpha *. d) in
 	let e1 = 1. +. e in
 	let f = e /. (e1 *. e1) in
-	let aux x = if x = nan then 0. else x in
+	let aux x = if classify_float x = FP_nan then 0. else x in
 	((1. /. e1), aux (-. d *. f), aux (alpha *. f))
 
 let random_float a b = Random.float (b -. a) +. a
@@ -127,6 +127,13 @@ let inv_m m =
 	loop 0;
 	init_matrix n n (fun i j -> m.(i).(j+n))
 
+let check_nan s m =
+	for i = 0 to Array.length m - 1 do
+		for j = 0 to Array.length m.(0) - 1 do
+			if classify_float m.(i).(j) = FP_nan then
+				Printf.eprintf "%s : %d %d !!!!!!!!!!!!!!!!!!\n" s i j
+		done
+	done
 
 (**
 	Résolution dans le cas où les paramètres sont uniformes.
@@ -360,6 +367,9 @@ let calc_grad_single3 data (cm,ca,cl,rm,ra,rl,am,aa,al,im,sm) i =
 				else (boids.(j).pos -- boids.(i).pos) // d.(i).(j) in
 			gcm.(i).(j) <- vec ** s;
 			gca.(i).(j) <- vec ** (da *. cm.(i).(j));
+(*			let a,b = vec in
+			let c,d = gca.(i).(j) in
+			Printf.eprintf "%d %d %e %e %e %e %e\n" i j a b c d da; *)
 			gcl.(i).(j) <- vec ** (dl *. cm.(i).(j));
 			v.(i) <- v.(i) ++ (gcm.(i).(j) ** cm.(i).(j))
 		done
@@ -391,7 +401,7 @@ let calc_grad_single3 data (cm,ca,cl,rm,ra,rl,am,aa,al,im,sm) i =
 			gam.(i).(j) <- vec ** s;
 			gaa.(i).(j) <- vec ** (da *. am.(i).(j));
 			gal.(i).(j) <- vec ** (dl *. am.(i).(j));
-			v.(i) <- v.(i) ++ (gam.(i).(j) ** aa.(i).(j))
+			v.(i) <- v.(i) ++ (gam.(i).(j) ** am.(i).(j))
 		done
 	done;
 	
@@ -430,6 +440,8 @@ let calc_grad_single3 data (cm,ca,cl,rm,ra,rl,am,aa,al,im,sm) i =
 	let gim = aux3 gim in
 	let gsm = aux3 gsm in
 	
+(*	check_nan "gca-1" gca; *)
+	
 	((gcm,gca,gcl,grm,gra,grl,gam,gaa,gal,gim,gsm),!c)
 
 let calc_grad3 n data param =
@@ -461,6 +473,8 @@ let calc_grad3 n data param =
 		) in
 	loop (n-1);
 	
+(*	check_nan "gca2" gca2; *)
+	
 	let nf = 1. /. (float n) in
 	List.iter (mul_m nf) [gcm2;gca2;gcl2;grm2;gra2;grl2;gam2;gaa2;gal2];
 	List.iter (mul_v nf) [gim2;gsm2];
@@ -470,8 +484,8 @@ let calc_grad3 n data param =
 let apply_grad3 eta n data (cm,ca,cl,rm,ra,rl,am,aa,al,im,sm) =
 	let ((gcm,gca,gcl,grm,gra,grl,gam,gaa,gal,gim,gsm),cost) =
 		calc_grad3 n data (cm,ca,cl,rm,ra,rl,am,aa,al,im,sm) in
-	let c = (-1.) *. eta /. (float (Array.length data - 1)
-		*. float (Array.length data.(0))) in
+(*	check_nan "gca" gca; *)
+	let c = (-1.) *. eta /. (float (Array.length data - 1)) in
 	List.iter (mul_m c) [gcm;gca;gcl;grm;gra;grl;gam;gaa;gal];
 	List.iter (mul_v c) [gim;gsm];
 	List.iter2 sum_m [cm;ca;cl;rm;ra;rl;am;aa;al]
@@ -507,17 +521,17 @@ let main () =
 		let n = Array.length data.(0) in
 		let a = Array.make_matrix n n in
 		let b = Array.make n in
-		a 0.001,
-		a 0.5,
+		a 1.,
+		a 1.,
 		a 100.,
-		a 10.,
-		a 0.5,
+		a 1.,
+		a 1.,
 		a 20.,
-		a 0.01,
-		a 0.5,
+		a 1.,
+		a 1.,
 		a 100.,
 		b 1.,
-		b 0.25 in
+		b 1. in
 (*	let print t =
 		let (cb,rb,ab,ib,sb) = get_coeff5 t in
 		Printf.printf "cm = %f\nrm = %f\nam = %f\nim = %f\nsm = %f\n"
@@ -543,11 +557,11 @@ let main () =
 			let cost = apply_grad3
 				(!eta /. sqrt (float (!nb_gens - n + 1)))
 				!nb_grads data param in
-			if !interact then (
 				Printf.eprintf "====================\n";
 				Printf.eprintf "n = %d\n" (!nb_gens - n);
-				print param;
 				Printf.eprintf "c = %f\n%!" cost;
+			if !interact then (
+				print param;
 				Scanf.scanf "%s\n" (fun s -> ())
 			);
 			loop (n-1) in
