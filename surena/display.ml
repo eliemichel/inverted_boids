@@ -69,7 +69,7 @@ let rules cm ca cl rm ra rl am aa al im sm =
 	let al = uniform n al in
 	let im = Array.make n im in
 	let sm = Array.make n sm in
-	let rules = [
+	let rules = [ (* Rules order should not be changed for CLI integrity ! *)
 		Cohesion (cm,ca,cl);
 		Repulsion (rm,ra,rl);
 		Alignment (am,aa,al);
@@ -86,12 +86,6 @@ let rules =
 		0.01 0.5 100.
 		1.
 		0.25 in
-(*	let rules,(cb,_,_,_),(_,rm,ra,rl),_,_ = rules
-		0.0073 1. 0.5 100.
-		5.002 1. 0.5 20.
-		0.73849 1. 0.5 100.
-		0.363 in
-*)
 	im.(0) <- 0.95;
 	sm.(0) <- 1.;
 	for i = 1 to n - 1 do
@@ -107,36 +101,6 @@ let rules =
 	rules
 
 
-(* 
-let rules =
-	let cb = Array.make n 0.01 in
-	let cm = quadblock n 1. 0. 0. 1. in
-	let ca = quadblock n 0.5 0. 0. 0.5 in
-	let cl = quadblock n 100. 0. 0. 100. in
-	let rb = Array.make n 10. in
-	let rm = quadblock n 1. 0. 0. 1. in
-	let ra = quadblock n 2. 0. 0. 2. in
-	let rl = quadblock n 20. 0. 0. 20. in
-	let ab = Array.make n 0.5 in
-	let am = quadblock n 1. 0. 0. 1. in
-	let aa = quadblock n 0.5 0. 0. 0.5 in
-	let al = quadblock n 100. 0. 0. 100. in
-	let ib = Array.make n 0.5 in
-	let rules = [
-		cb, Cohesion (cm,ca,cl);
-		rb, Repulsion (rm,ra,rl);
-		ab, Alignment (am,aa,al);
-		ib, Inertia
-	] in
-	cb.(0) <- 0.1;
-	for i = 1 to n - 1 do
-		rl.(i).(0) <- 100.;
-		ra.(i).(0) <- 1.;
-		rm.(i).(0) <- 10.
-	done;
-	rules
-*)
-
 let nb_cycles = ref (-1)
 
 let boids = Array.init n (fun i -> default_boid ())
@@ -146,10 +110,6 @@ let () =
 	for k = 1 to n/2 - 1 do
 		boids.(k) <- { boids.(k) with color = Graphics.blue }
 	done
-
-
-let stringtail str i =
-	String.sub str i ((String.length str) - i)
 
 
 
@@ -185,7 +145,9 @@ let simu () =
 		close_out oc;
 	exit(0)
 
-exception Quit
+
+let eval = Cli.eval rules boids viewport_x viewport_y viewport_scale
+
 let cli () =
 	print_endline "Surena, v0.0.1";
 	print_endline "type `help` for more information about that CLI";
@@ -195,120 +157,10 @@ let cli () =
 			print_string "Surena ⋅> ";
 			try
 				let cmd = read_line () in
-				try sscanf cmd "help" ();
-					print_endline "Surena, v0.0.1";
-					print_endline "";
-					print_endline "Available commands are :";
-					print_endline " - help: display that list";
-					print_endline " - quit: close Surena";
-					print_endline " - print boid \027[01mn\027[0m: display information about the \027[01mn\027[0mth boid";
-					print_endline " - update boid \027[01mn\027[0m set ";
-					print_endline "     [position=(\027[01mx\027[0m,\027[01my\027[0m)]";
-					print_endline "     [velocity=(\027[01mvx\027[0m,\027[01mvy\027[0m)]";
-					print_endline "     [alive=yes|true|no|false]";
-					print_endline "     [color=(\027[01mr\027[0m,\027[01mg\027[0m,\027[01mb\027[0m)]";
-					print_endline "    Edit boid info";
-					print_endline " - update viewport set";
-					print_endline "     [position=(\027[01mx\027[0m,\027[01my\027[0m)]";
-					print_endline "     [scale=\027[01ms\027[0m)]";
-					print_endline "    Edit viewport info"
-				with Scan_failure _ ->
-				try sscanf cmd "quit" ();
-					raise Quit
-				with Scan_failure _ ->
-				try sscanf cmd "print boid %i" (fun i ->
-					if i < 0 || i >= n
-					then print_endline "error: boid index out of bounds"
-					else
-						let boid = boids.(i) in
-						let x, y = boid.pos in
-						let vx, vy = boid.v in
-						printf "Boid %i:\n" i;
-						printf " - position : (%f, %f)\n" x y;
-						printf " - velocity : (%f, %f)\n" vx vy;
-						printf " - alive : %s\n" (if boid.alive then "yes" else "no");
-						printf " - color : #%6x\n" boid.color;
-						print_endline ""
-				)
-				with Scan_failure _ ->
-				try sscanf cmd "update boid %i set%n" (fun i newcur ->
-					let cur = ref newcur in
-					if i < 0 || i >= n
-					then print_endline "error: boid index out of bounds"
-					else
-					let boid = boids.(i) in
-					try
-						while true do
-							try sscanf (stringtail cmd !cur) " position = (%f,%f)%n" (fun x y newcur ->
-								cur := !cur + newcur;
-								boid.pos <- x, y;
-								printf "Position of boid %i set to (%f,%f)\n" i x y
-							)
-							with Scan_failure _ ->
-							try sscanf (stringtail cmd !cur) " velocity = (%f,%f)%n" (fun x y newcur ->
-								cur := !cur + newcur;
-								boid.v <- x, y;
-								printf "Velocity of boid %i set to (%f,%f)\n" i x y
-							)
-							with Scan_failure _ ->
-							try sscanf (stringtail cmd !cur) " alive = %s%n" (fun str newcur ->
-								cur := !cur + newcur;
-								let str = String.lowercase str in
-								if str = "yes" || str = "true"
-								then (
-									boid.alive <- true;
-									printf "Boid %i set to alive\n" i
-								)
-								else if str = "no" || str = "false"
-								then (
-									boid.alive <- false;
-									printf "Boid %i set to dead\n" i
-								)
-								else
-									printf "error: `%s` is not a valid option\n" str
-								
-							)
-							with Scan_failure _ ->
-							try sscanf (stringtail cmd !cur) " color = (%i,%i,%i)%n" (fun r g b newcur ->
-								cur := !cur + newcur;
-								let c = rgb r g b in
-								boid.color <- c;
-								printf "Color of boid %i set to #%6x\n" i c
-							)
-							with Scan_failure _ ->
-								print_endline "error: property not found";
-								raise End_of_file
-						done
-					with End_of_file -> ()
-				)
-				with Scan_failure _ ->
-				try sscanf cmd "update viewport set%n" (fun newcur ->
-					let cur = ref newcur in
-					try
-						while true do
-							try sscanf (stringtail cmd !cur) " position = (%f,%f)%n" (fun x y newcur ->
-								cur := !cur + newcur;
-								viewport_x := x;
-								viewport_y := y;
-								printf "Viewport position set to (%f,%f)\n" x y
-							)
-							with Scan_failure _ ->
-							try sscanf (stringtail cmd !cur) " scale = %f%n" (fun scale newcur ->
-								cur := !cur + newcur;
-								viewport_scale := scale;
-								printf "Viewport scale set to %f\n" scale
-							)
-							with Scan_failure _ ->
-								print_endline "error: property not found";
-								raise End_of_file
-						done
-					with End_of_file -> ()
-				)
-				with Scan_failure _ ->
-					print_endline "error: command not found"
+					eval cmd
 			with End_of_file -> ()
 		done
-	with Quit -> ()
+	with Cli.Quit -> ()
 
 let main () =
 	ignore (Thread.create simu ());

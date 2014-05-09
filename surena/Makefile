@@ -1,6 +1,6 @@
 
 BIN1=display
-SOURCES1=engine.ml display.ml
+SOURCES1=engine.ml cli.ml display.ml
 FLAGS1=-libs graphics,unix -tags thread
 
 BIN2=invert
