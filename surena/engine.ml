@@ -18,6 +18,7 @@ type _rule =
 	| Repulsion of rule_param
 	| Inertia of float array
 	| Stay of float array
+	| Gravity of float array * (float * float)
 type rule = float array * _rule
 
 let real_mod a b =
@@ -140,6 +141,7 @@ let step_rule_single boids (rule) i =
 	| Inertia param -> boids.(i).v ** param.(i)
 	| Stay param ->
 		(stay_v boids.(i).pos) ** param.(i)
+	| Gravity (param,v) -> v ** param.(i)
 
 let step_rule boids rule =
 	Array.init (Array.length boids) (step_rule_single boids rule)

@@ -493,6 +493,24 @@ let apply_grad3 eta n data (cm,ca,cl,rm,ra,rl,am,aa,al,im,sm) =
 	List.iter2 sum_v [im;sm] [gim;gsm];
 	cost
 
+(**
+	Résolution dans le cas homogène avec une gravité vers le bas.
+	Les paramètres sont :
+		cm
+		ca
+		cl
+		rm
+		ra
+		rl
+		am
+		aa
+		al
+		gm
+		im
+		sm
+	tous de type float.
+*)
+
 let read_data name =
 	let ic = open_in_bin name in
 	let nb_cycles = input_value ic in

@@ -11,7 +11,7 @@ open Engine
 
 let dump_file = ref ""
 
-let _ = Random.init (int_of_float (100. *. Unix.time ()))
+let _ = Random.self_init ()
 
 let viewport_x = ref 0.
 let viewport_y = ref 0.
@@ -26,8 +26,8 @@ let draw_boid boid =
 	let x,y = boid.pos in
 		set_color boid.color;
 		fill_circle
-			(truncate ((x -. !viewport_x) *. !viewport_scale +. viewport_w /. 2.))
-			(truncate ((y -. !viewport_y) *. !viewport_scale +. viewport_h /. 2.))
+			(truncate ((x -. !viewport_x) *. !viewport_scale (*+. viewport_w /. 2.*)))
+			(truncate ((y -. !viewport_y) *. !viewport_scale (*+. viewport_h /. 2.*)))
 			3
 
 let n = 200
@@ -54,7 +54,7 @@ let quadblock n a b c d =
 ] *)
 (* TODO : Procédures pratiques de construction de règle *)
 
-let rules cm ca cl rm ra rl am aa al im sm =
+let rules cm ca cl rm ra rl am aa al gm im sm =
 (*	let cb = Array.make n cb in *)
 	let cm = uniform n cm in
 	let ca = uniform n ca in
@@ -69,24 +69,27 @@ let rules cm ca cl rm ra rl am aa al im sm =
 	let al = uniform n al in
 	let im = Array.make n im in
 	let sm = Array.make n sm in
+	let gm = Array.make n gm in
 	let rules = [ (* Rules order should not be changed for CLI integrity ! *)
 		Cohesion (cm,ca,cl);
 		Repulsion (rm,ra,rl);
 		Alignment (am,aa,al);
+		Gravity (gm,(0.,(-1.)));
 		Inertia im;
 		Stay sm
 	] in
-	rules,(cm,ca,cl),(rm,ra,rl),(am,aa,al),im,sm
+	rules,(cm,ca,cl),(rm,ra,rl),(am,aa,al),gm,im,sm
 
 
 let rules =
-	let rules,(cm,_,cl),(rm,_,rl),(am,_,_),im,sm = rules
+	let rules,(cm,_,cl),(rm,_,rl),(am,_,_),gm,im,sm = rules
 		0.001 0.5 100.
 		10. 0.5 20.
-		0.01 0.5 100.
+		0.001 0.5 100.
+		0.05
 		1.
-		0.25 in
-	im.(0) <- 0.95;
+		5. in
+(*	im.(0) <- 0.95;
 	sm.(0) <- 1.;
 	for i = 1 to n - 1 do
 		cl.(0).(i) <- 300.;
@@ -97,7 +100,7 @@ let rules =
 		rl.(i).(0) <- 150.;
 		rm.(i).(0) <- 100.;
 		rm.(0).(i) <- 0.
-	done;
+	done;*)
 	rules
 
 
@@ -165,7 +168,6 @@ let cli () =
 let main () =
 	ignore (Thread.create simu ());
 	cli ()
-
 
 let () = Arg.parse
 	["--dump", Arg.Set_string dump_file,
