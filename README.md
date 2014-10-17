@@ -184,7 +184,7 @@ Références bibliographiques
 
  - Cours de Bernard Chazelle
 
- - [Thèses de Jérémy Patrix](http://exppad.com/public/cours/these.pdf) (Détection de comportements à travers des modèles multi-agents
+ - [Thèses de Jérémy Patrix](https://tel.archives-ouvertes.fr/tel-00991091) (Détection de comportements à travers des modèles multi-agents
 collaboratifs, appliquée à l’évaluation de la situation, notamment en
 environnement asymétrique avec des données imprécises et incertaines)
 
